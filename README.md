@@ -1,88 +1,40 @@
 # juntos
 
-This is the juntos project.
+Welcome to Project Juntos, a peer-to-peer game networking library built from scratch for both performance and anti-cheat.
 
-# With thanks to:
-https://github.com/friendlyanon/cmake-init
-
-# Licensing
-
-<!--
-Please go to https://choosealicense.com/licenses/ and choose a license that
-fits your needs. The recommended license for a project of this type is the
-GNU AGPLv3.
--->
-
-
-
-
-
-
-
-
-
-
-
-
-
+This project is currently in active development, and I welcome any-and-all issues/PR's!
 
 # Building with CMake
 
 ## Build
 
-This project doesn't require any special command-line flags to build to keep
+This project doesn't require any special command-line flags, in order to keep
 things simple.
 
-Here are the steps for building in release mode with a single-configuration
-generator, like the Unix Makefiles one:
+Here's the simple steps, from the root directory of the project:
 
 ```sh
-cmake -S . -B build -D CMAKE_BUILD_TYPE=Release
-cmake --build build
+mkdir build && cd build
 ```
 
-Here are the steps for building in release mode with a multi-configuration
-generator, like the Visual Studio ones:
+Then build:
 
 ```sh
-cmake -S . -B build
-cmake --build build --config Release
+cmake .. && make
 ```
 
-### Building with MSVC
-
-Note that MSVC by default is not standards compliant and you need to pass some
-flags to make it behave properly. See the `flags-msvc` preset in the
-[CMakePresets.json](CMakePresets.json) file for the flags and with what
-variable to provide them to CMake during configuration.
-
-### Building on Apple Silicon
-
-CMake supports building on Apple Silicon properly since 3.20.1. Make sure you
-have the [latest version][1] installed.
-
-## Install
-
-This project doesn't require any special command-line flags to install to keep
-things simple. As a prerequisite, the project has to be built with the above
-commands already.
-
-The below commands require at least CMake 3.15 to run, because that is the
-version in which [Install a Project][2] was added.
-
-Here is the command for installing the release mode artifacts with a
-single-configuration generator, like the Unix Makefiles one:
+Finally, run:
 
 ```sh
-cmake --install build
+./juntos
 ```
 
-Here is the command for installing the release mode artifacts with a
-multi-configuration generator, like the Visual Studio ones:
+## Credits
 
-```sh
-cmake --install build --config Release
-```
+Crediting projects utilised for inspiration/support
+* https://github.com/mas-bandwidth/yojimbo
+* https://github.com/friendlyanon/cmake-init
 
-[1]: https://cmake.org/download/
-[2]: https://cmake.org/cmake/help/latest/manual/cmake.1.html#install-a-project
+## Most importantly...
+
+Why the name [Juntos](https://www.linguee.com/portuguese-english/translation/juntos.html)? I'm currently studying Portuguese (brasileiro, me desculpa), and this is a word that roughly translates to the English word [connected](https://www.oed.com/dictionary/connected_adj), representing the way this library will _connect_ clients to enable shared multiplayer experiences.
