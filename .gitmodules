@@ -1,0 +1,3 @@
+[submodule "submodules/violet"]
+	path = submodules/violet
+	url = https://github.com/paullouisageneau/violet
