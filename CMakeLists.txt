@@ -14,13 +14,15 @@ project(
 
 add_library(
     juntos_lib OBJECT
-    src/lib.cpp
+    src/client.cpp
+    src/session_linux.cpp
+    src/session_windows.cpp
 )
 
 target_include_directories(
     juntos_lib ${warning_guard}
     PUBLIC
-    "\$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>"
+    "\$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 )
 
 target_compile_features(juntos_lib PUBLIC cxx_std_17)
@@ -34,4 +36,8 @@ set_property(TARGET juntos_exe PROPERTY OUTPUT_NAME juntos)
 
 target_compile_features(juntos_exe PRIVATE cxx_std_17)
 
-target_link_libraries(juntos_exe PRIVATE juntos_lib)
+if (WIN32)
+    target_link_libraries(juntos_exe PRIVATE juntos_lib wsock32 ws2_32)
+else()
+    target_link_libraries(juntos_exe PRIVATE juntos_lib pthread)
+endif()
