@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.2)
 
 include(cmake/prelude.cmake)
 
@@ -25,16 +25,19 @@ target_include_directories(
     "\$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 )
 
-target_compile_features(juntos_lib PUBLIC cxx_std_17)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED On)
+set(CMAKE_CXX_EXTENSIONS Off)
 
 # ---- Declare executable ----
+add_compile_options(-std=c++23)
 
 add_executable(juntos_exe src/main.cpp)
 add_executable(juntos::exe ALIAS juntos_exe)
 
 set_property(TARGET juntos_exe PROPERTY OUTPUT_NAME juntos)
-
-target_compile_features(juntos_exe PRIVATE cxx_std_17)
+set_target_properties(juntos_lib PROPERTIES CXX_STANDARD 23)
+set_target_properties(juntos_exe PROPERTIES CXX_STANDARD 23)
 
 if (WIN32)
     target_link_libraries(juntos_exe PRIVATE juntos_lib wsock32 ws2_32)

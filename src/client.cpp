@@ -23,6 +23,8 @@ bool Client::init(int port) {
 	std::unique_ptr<SessionInterface> session = CreateSession();
 
     session->init(port);
+
+    return true;
 }
 
 

@@ -1,6 +1,7 @@
 #include <session_linux.h>
 
 #include <string.h>
+#include <iostream>
 
 LinuxSession::LinuxSession() {
 
@@ -27,7 +28,7 @@ int LinuxSession::createSocket(const char* ip, const int port) {
 
 	// Convert IP address to binary
     if (inet_pton(AF_INET, ip, &si.sin_addr) <= 0) {
-        std::puts("Error  socket!\n");
+        std::cout << "Error converting IP address to binary, for IP " << ip << " and port " << port << std::endl;
         perror("inet_pton failed");
         return 0;
     }
@@ -48,5 +49,5 @@ bool LinuxSession::init(int portNumber) {
     sendSockFD = createSocket(ip, portNumber);
     recvSockFD = createSocket(ip, portNumber + 1);
 
-    return 0;
+    return true;
 }
