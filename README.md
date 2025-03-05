@@ -50,4 +50,4 @@ Crediting projects utilised for inspiration/support
 
 ## Most importantly...
 
-Why the name [Juntos](https://www.linguee.com/portuguese-english/translation/juntos.html)? I'm currently studying Portuguese (brasileiro, me desculpa), and this is a word that roughly translates to the English word [connected](https://www.oed.com/dictionary/connected_adj), representing the way this library will _connect_ clients to enable shared multiplayer experiences.
+Why the name [Juntos](https://www.linguee.com/portuguese-english/translation/juntos.html)? I'm currently studying Portuguese (brasileiro, me desculpa), and this is a word that roughly translates to the English word [together](https://www.oed.com/search/dictionary/?scope=Entries&q=together), representing the way this library will _connect_ clients to enable shared multiplayer experiences.
