@@ -38,7 +38,8 @@ cmake .. && make
 Finally, run:
 
 ```sh
- cd submodules/violet && sudo docker run --network=host violet --credentials=USER:PASSWORD -d
+python3 ../stun.py &
+cd submodules/violet && sudo docker run --network=host violet --credentials=USER:PASSWORD -d
 ./juntos
 ```
 

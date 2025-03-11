@@ -18,6 +18,7 @@ public:
         @return true/false whether client initialisation succeeded or failed
     */
     bool init(int port);
+    bool update();
 private:
-    
+    std::unique_ptr<SessionInterface> session;
 };

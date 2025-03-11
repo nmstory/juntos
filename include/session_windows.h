@@ -8,7 +8,9 @@ public:
     WindowsSession();
     ~WindowsSession();
 
-    bool init(int portNumber) override;
+    virtual bool init(const int portNumber) = 0;
+    virtual bool sendData(const char* string, const size_t length) = 0;
+    virtual bool recvData() = 0;
 private:
     //socket socket;
 
