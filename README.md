@@ -6,12 +6,24 @@ This project is currently in active development, and I welcome any-and-all issue
 
 # Building with CMake
 
+## Prerequisites
+
+docker (used version: 4.38.0)
+
 ## Build
 
 This project doesn't require any special command-line flags, in order to keep
 things simple.
 
 Here's the simple steps, from the root directory of the project:
+
+```sh
+git submodule update --init --recursive
+```
+
+```sh
+(cd submodules/violet && sudo docker build -t violet .)
+```
 
 ```sh
 mkdir build && cd build
@@ -26,6 +38,8 @@ cmake .. && make
 Finally, run:
 
 ```sh
+python3 ../stun.py &
+cd submodules/violet && sudo docker run --network=host violet --credentials=USER:PASSWORD -d
 ./juntos
 ```
 
