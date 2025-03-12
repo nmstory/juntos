@@ -61,11 +61,15 @@ int getOtherPeersDetails(int* sockfd, sockaddr_in* serverAddr) {
     // Get the list of clients
     std::string listMessage = "LIST:";
     sendto(*sockfd, listMessage.c_str(), listMessage.length(), 0, (struct sockaddr*)serverAddr, sizeof(*serverAddr));
-
     bytesReceived = recvfrom(*sockfd, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)serverAddr, &serverAddrLen);
     if (bytesReceived > 0) {
-        buffer[bytesReceived] = '\0';
-        std::cout << "Client list: " << buffer << std::endl;
+        if (bytesReceived == 5) {
+            std::puts("Currently waiting for other clients to connect! Hang on :)");
+        }
+        else {
+            buffer[bytesReceived] = '\0';
+            std::cout << "Client list: " << buffer << std::endl;
+        }
     }
 
     return 0;
