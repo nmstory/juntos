@@ -1,6 +1,11 @@
 #pragma once
 
 #include <common.h>
+#include <vector>
+
+struct Peer {
+    struct sockaddr_in sendAddr;
+};
 
 class SessionInterface {
 public:
@@ -12,13 +17,7 @@ public:
         @return true/false whether client initialisation succeeded or failed
     */
    virtual bool init(const int portNumber) = 0;
-   virtual bool sendData(const char* string, const size_t length) = 0;
-   virtual bool recvData() = 0;
-private:
-    /*
-        @brief Initialise a BSD Socket
-        @return true/false whether client initialisation succeeded or failed
-    */
-    //virtual int createSocket(const char* ip, const int port) = 0;
-
+   virtual bool update() = 0;
+protected:
+    std::vector<Peer>* peers;
 };

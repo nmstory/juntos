@@ -28,21 +28,10 @@ bool Client::init(int port) {
 }
 
 bool Client::update(){
-    if(!session){
-        return false;
-    }
+    
+    session->update();
 
-    bool sessionActive = true;
-
-    while (sessionActive){
-        session->recvData();
-
-        char buffer[200];
-        std::cout << "enter msg to send to server: ";
-        if(std::cin.getline(buffer, 200)){
-            session->sendData(buffer, 200);
-        }   
-    }
+    return true;
 }
 
 

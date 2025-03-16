@@ -25,20 +25,24 @@ def handle_client(data, client_address, server_socket):
         response = "JOIN_OK".encode()
 
     elif parts[0] == "LIST":
-        formatted_guestlist = ""
-        now = time.time()
-        dead_clients = []
+        if len(guests) == 1:
+            response = "EMPTY".encode()
+        else:
+            formatted_guestlist = ""
+            now = time.time()
+            dead_clients = []
 
-        for address, guest_info in guests.items():
-            if now - guest_info["last_seen"] > TIMEOUT:
-                dead_clients.append(address)
-            else:
-                formatted_guestlist += f"{address[0]}:{address[1]};"
-        for address in dead_clients: # Remove dead peers
-            del guests[address]
-            print(f"Client timed out: {address}")
+            for address, guest_info in guests.items():
+                if now - guest_info["last_seen"] > TIMEOUT:
+                    dead_clients.append(address)
+                else:
+                    if address != client_address: # Don't send the client their own address
+                        formatted_guestlist += f"{address[0]}:{address[1]};"
+            for address in dead_clients: # Remove dead peers
+                del guests[address]
+                print(f"Client timed out: {address}")
 
-        response = formatted_guestlist.encode()
+            response = formatted_guestlist.encode()
 
     server_socket.sendto(response, client_address)
     

@@ -10,11 +10,16 @@ project(
     LANGUAGES CXX
 )
 
-# ---- Declare library ----
+# C++17 and above
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED On)
+set(CMAKE_CXX_EXTENSIONS Off)
 
+# library
 add_library(
     juntos_lib OBJECT
     src/client.cpp
+    src/linux_handler.cpp
     src/session_linux.cpp
     src/session_windows.cpp
 )
@@ -22,23 +27,16 @@ add_library(
 target_include_directories(
     juntos_lib ${warning_guard}
     PUBLIC
-    "\$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+    "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 )
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED On)
-set(CMAKE_CXX_EXTENSIONS Off)
-
-# ---- Declare executable ----
-add_compile_options(-std=c++23)
-
+# executable
 add_executable(juntos_exe src/main.cpp)
 add_executable(juntos::exe ALIAS juntos_exe)
 
 set_property(TARGET juntos_exe PROPERTY OUTPUT_NAME juntos)
-set_target_properties(juntos_lib PROPERTIES CXX_STANDARD 23)
-set_target_properties(juntos_exe PROPERTIES CXX_STANDARD 23)
 
+# link
 if (WIN32)
     target_link_libraries(juntos_exe PRIVATE juntos_lib wsock32 ws2_32)
 else()
