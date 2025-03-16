@@ -19,5 +19,5 @@ public:
    virtual bool init(const int portNumber) = 0;
    virtual bool update() = 0;
 protected:
-    std::vector<sockaddr_in>* peers;
+    std::vector<Peer>* peers;
 };
