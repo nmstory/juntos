@@ -1,6 +1,12 @@
 #pragma once
 
+#ifdef __linux__
+
+#include <linux_handler.h>
 #include <session_interface.h>
+
+const char STUN_SERVER_IP[] = "127.0.0.1";
+const int STUN_SERVER_PORT = 12345;
 
 class LinuxSession : public SessionInterface {
 public:
@@ -8,17 +14,11 @@ public:
     ~LinuxSession();
 
     bool init(const int portNumber) override;
-    bool sendData(const char* string, const size_t length) override;
-    bool recvData() override;
-    
+    bool update() override;
 private:
-    sockaddr_in populateAddress(const char* ip, const int port);
-    int createSocket(const char* ip, sockaddr_in addr);
-
-    // Linux Socket File Descriptors
-    int sendSockFD;
-    struct sockaddr_in sendAddr;
-    int recvSockFD;
-    struct sockaddr_in recvAddr;
-    
+    // Linux Socket File Descriptor and relevant Address
+    int sockFD;
+    struct sockaddr_in addr;    
 };
+
+#endif

@@ -1,92 +1,102 @@
+#ifdef __linux__
+
 #include <session_linux.h>
 
 #include <string.h>
 #include <iostream>
 
 LinuxSession::LinuxSession() {
+    peers = new std::vector<Peer>();
 
 }
 
 LinuxSession::~LinuxSession() {
-    close(sendSockFD);
-    close(recvSockFD);
-}
-
-sockaddr_in LinuxSession::populateAddress(const char* ip, const int port){
-    struct sockaddr_in si;
-
-    memset(&si, 0, sizeof(si));
-	si.sin_family = AF_INET;
-	si.sin_port = htons(port);
-
-    // Convert IP address to binary
-    if (inet_pton(AF_INET, ip, &si.sin_addr) <= 0) {
-        std::cout << "Error converting IP address to binary, for IP " << ip << " and port " << port << std::endl;
-        perror("inet_pton failed");
-    }
-
-    return si;
-}
-
-int LinuxSession::createSocket(const char* ip, sockaddr_in addr) {
-    int s;
-    
-    if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1){
-		std::puts("Error creating socket!\n");
-        close(s);
-		return 0;
-	}
-
-    if (bind(s, (struct sockaddr*)&addr, sizeof(addr)) == -1){
-		std::puts("Error binding to socket!\n");
-        perror("Bind failed");
-		return -1;
-	}
-
-    return s;
+    close(sockFD);
 }
 
 bool LinuxSession::init(int portNumber) {
     char ip[20];
     strcpy(ip, "127.0.0.1");
 
-    sendAddr = populateAddress(ip, portNumber);
-    sendSockFD = createSocket(ip, sendAddr);
+    addr = populateAddress(ip, portNumber);
+    sockFD = createSocket(ip, addr);
 
-    //recvAddr = populateAddress(ip, (portNumber + 1)); manual adjustment below for testing
-    // configure a way to have 4 separate sockets, and your in!!!!!!!!!!!
-    do {
-        recvAddr = populateAddress(ip, (portNumber++));
+    sockaddr_in stunAddr;
+    stunAddr.sin_family = AF_INET;
+    stunAddr.sin_port = htons(STUN_SERVER_PORT);
+    if (inet_pton(AF_INET, STUN_SERVER_IP, &stunAddr.sin_addr) <= 0) {
+        std::cerr << "Invalid server IP address" << std::endl;
+        close(sockFD);
+        return -1;
+    }
 
-    }while(recvSockFD = createSocket(ip, recvAddr) == -1);
+    // Join the server
+    std::string joinMessage = "JOIN";
+    sendto(sockFD, joinMessage.c_str(), joinMessage.length(), 0, (struct sockaddr*) &stunAddr, sizeof(stunAddr));
+    
+    char buffer[4096];
+    socklen_t serverAddrLen = sizeof(stunAddr);
+    int bytesReceived = recvfrom(sockFD, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*) &stunAddr, &serverAddrLen);
+
+    if (bytesReceived > 0) {
+        buffer[bytesReceived] = '\0';
+        std::cout << "Server response: " << buffer << std::endl;
+    } 
+    else {
+        std::cerr << "No response from server or error occurred" << std::endl;
+    }
+
+    // Get the list of clients
+    std::string listMessage = "LIST:";
+    sendto(sockFD, listMessage.c_str(), listMessage.length(), 0, (struct sockaddr*)&stunAddr, sizeof(stunAddr));
+    
+    bytesReceived = recvfrom(sockFD, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&stunAddr, &serverAddrLen);
+    if (bytesReceived > 0) {
+        if (bytesReceived == 5) {
+            std::puts("Currently waiting for other clients to connect! Hang on :)");
+            return 0;
+        }
+        else {
+            std::cout << "inside the else" << std::endl;    
+            buffer[bytesReceived] = '\0';
+            
+            size_t peerIndex = 0;
+            char* splitterIndex;
+            char* ip;
+
+       
+            while (splitterIndex != NULL) {
+                peers->push_back(Peer());
+                splitterIndex = strtok(buffer, ":;");
+                ip = splitterIndex;
+                splitterIndex = strtok(buffer, ":;");
+
+                peers->at(peerIndex).sendAddr = populateAddress(ip, atoi(splitterIndex));
+                peerIndex++;
+                std::cout << "Peer IP: " << ip << " Port: " << atoi(splitterIndex) << std::endl;
+            }
+
+        }
+    }
+
+    // ping each client
+    for (Peer peer : *peers) {
+        std::string pingMessage = "PING:";
+        int bytesSent = sendto(sockFD, pingMessage.c_str(), pingMessage.length(), 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
+        if (bytesSent == -1) {
+            std::cerr << "Error sending PING to peer " << peer.sendAddr.sin_addr.s_addr << ":" << ntohs(peer.sendAddr.sin_port) << std::endl;
+        }
+        
+    }
 
     return true;
 }
 
-bool LinuxSession::sendData(const char* string, const size_t length){
-    int byteCount = sendto(sendSockFD, string, length, 0, (struct sockaddr *)&recvAddr, sizeof(recvAddr)); //0 flags
+bool LinuxSession::update() {
 
-    if (byteCount > 0) {
-        std::cout << "message sent successfully" << std::endl;
-        return true;
-    }
-    else {
-        perror("Error sending!\n");
-        // would want to close socket etc., as we normally do
-    }
-    
-    return false;
-}   
+    recvData(sockFD);
 
-bool LinuxSession::recvData(){
-    char buffer[200];
-    int byteCount = recv(recvSockFD, buffer, 200, 0);
-    
-    if (byteCount > 0) {
-        std::cout << "Message received: " << buffer << std::endl;
-    }
-    else {
-        perror("Error receving!\n");
-        // would want to close socket etc., as we normally do
-    }
+    return true;
 }
+
+#endif
