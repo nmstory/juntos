@@ -19,7 +19,7 @@ set(CMAKE_CXX_EXTENSIONS Off)
 add_library(
     juntos_lib OBJECT
     src/client.cpp
-    src/linux_handler.cpp
+    src/network_handler.cpp
     src/session_linux.cpp
     src/session_windows.cpp
 )

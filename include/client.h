@@ -10,15 +10,15 @@
 
 class Client {
 public:
-    Client();
-    ~Client();
+	Client();
+	~Client();
 
-    /*
-        @brief Initialise Client Functionality
-        @return true/false whether client initialisation succeeded or failed
-    */
-    bool init(int port);
-    bool update();
+	/*
+		@brief Initialise Client Functionality
+		@return true/false whether client initialisation succeeded or failed
+	*/
+	bool init(int port);
+	bool update();
 private:
-    std::unique_ptr<SessionInterface> session;
+	std::unique_ptr<SessionInterface> session;
 };
