@@ -1,6 +1,6 @@
 # juntos
 
-Welcome to Project Juntos, a peer-to-peer game networking library built from scratch for both performance and anti-cheat.
+Welcome to Project Juntos, a peer-to-peer UDP game networking library built from scratch for both performance and anti-cheat.
 
 This project is currently in active development, and I welcome any-and-all issues/PR's!
 
@@ -8,7 +8,8 @@ This project is currently in active development, and I welcome any-and-all issue
 
 ## Prerequisites
 
-docker (used version: 4.38.0)
+* C++17 or above (for this I used clang++-16).
+* Python 3.13.2.
 
 ## Build
 
@@ -18,28 +19,17 @@ things simple.
 Here's the simple steps, from the root directory of the project:
 
 ```sh
-git submodule update --init --recursive
-```
-
-```sh
-(cd submodules/violet && sudo docker build -t violet .)
-```
-
-```sh
 mkdir build && cd build
 ```
 
 Then build:
-
 ```sh
 cmake .. && make
 ```
 
 Finally, run:
-
 ```sh
 python3 ../stun.py &
-cd submodules/violet && sudo docker run --network=host violet --credentials=USER:PASSWORD -d
 ./juntos
 ```
 
