@@ -8,14 +8,12 @@ This project is currently in active development, and I welcome any-and-all issue
 
 ## Prerequisites
 
-* C++17 or above (for this I used clang++-16).
-* Python 3.13.2.
+* C++20 (I use the clang++-16 compiler).
+* Python 3 (locally developed with 3.13.2).
 
 ## Build
 
-This project doesn't require any special command-line flags, in order to keep
-things simple.
-
+### Linux
 Here's the simple steps, from the root directory of the project:
 
 ```sh
@@ -30,8 +28,13 @@ cmake .. && make
 Finally, run:
 ```sh
 python3 ../stun.py &
-./juntos
+./juntos {DESIRED_PORT_NUMBER}
 ```
+
+### Windows
+I'm currently using Microsoft's Visual Studio 2022, which has support to compile and launch CMake projects.
+
+[See here](https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-170) for a tutorial on how to configure this!
 
 ## Credits
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
 
 #include <common.h>
 
+#include <memory>
 #include <session_interface.h>
 #include <session_linux.h>
 #include <session_windows.h>

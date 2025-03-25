@@ -2,9 +2,6 @@
 
 #include <session_windows.h>
 
-#include <string.h> //@todo needed?
-#include <iostream>
-
 WindowsSession::WindowsSession() {
 	peers = new std::vector<Peer>();
 
@@ -21,12 +18,12 @@ WindowsSession::~WindowsSession() {
 	WSACleanup();
 }
 
-bool WindowsSession::init(int portNumber) {
+bool WindowsSession::init(const int& portNumber) {
 	char ip[20];
 	strcpy(ip, "127.0.0.1");
 
-	addr = populateAddress(ip, portNumber);
-	socket = createSocket<SOCKET>(ip, addr);
+	localAddr = populateAddress(ip, portNumber);
+	socket = createSocket<SOCKET>(localAddr);
 
 	sockaddr_in stunAddr;
 	stunAddr.sin_family = AF_INET;
@@ -80,6 +77,14 @@ bool WindowsSession::init(int portNumber) {
 		}
 	}
 
+	// Set socket to non-blocking
+	u_long mode = 1; // Non-blocking mode
+	if (ioctlsocket(socket, FIONBIO, &mode) != 0) {
+		std::cerr << "Failed to set socket to non-blocking mode." << std::endl;
+		WSACleanup();
+		return 1;
+	}
+
 	// ping each client
 	for (Peer peer : *peers) {
 		std::string pingMessage = "PING";
@@ -93,8 +98,28 @@ bool WindowsSession::init(int portNumber) {
 }
 
 bool WindowsSession::update() {
-	recvData<SOCKET>(socket);
-	sendHeartbeat<SOCKET>(socket, addr);
+	auto now = std::chrono::steady_clock::now();
+	if ((now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
+		sendHeartbeatToStun<SOCKET>(socket, stunAddr);
+		lastHeartbeatToStun = now;
+	}
+
+	auto [success, data, addr] = recvData<SOCKET>(socket);
+
+	if (success) {
+		std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
+		std::cout << "Received data: " << received_str << std::endl;
+
+        // Processing data received
+		if (received_str == "PING") {
+			std::string pongMessage = "PONG";
+			sendto(socket, pongMessage.c_str(), pongMessage.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
+			peers->push_back(Peer(addr));
+		}
+		else if (received_str == "PING") {
+			peers->push_back(Peer(addr));
+		}
+    }
 
 	return true;
 }

@@ -2,7 +2,6 @@
 
 #ifdef __linux__
 
-#include <network_handler.h>
 #include <session_interface.h>
 
 const char STUN_SERVER_IP[] = "127.0.0.1";
@@ -13,12 +12,11 @@ public:
 	LinuxSession();
 	~LinuxSession();
 
-	bool init(const int portNumber) override;
+	bool init(const int& portNumber) override;
 	bool update() override;
 private:
-	// Linux Socket File Descriptor and relevant Address
+	// Linux Socket File Descriptor
 	int sockFD;
-	struct sockaddr_in addr;    
 };
 
 #endif
