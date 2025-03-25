@@ -94,7 +94,7 @@ bool LinuxSession::update() {
 		std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
 		std::cout << "Received data: " << received_str << std::endl;
 
-        // Processing data received
+		// Processing data received
 		if (received_str == "PING") {
 			std::string pongMessage = "PONG";
 			sendto(sockFD, pongMessage.c_str(), pongMessage.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
