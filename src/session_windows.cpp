@@ -119,8 +119,8 @@ bool WindowsSession::update() {
 		else if (received_str == "PING") {
 			peers->push_back(Peer(addr));
 		}
-    }
-
+	}
+	
 	return true;
 }
 
