@@ -28,10 +28,7 @@ bool Client::init(int port) {
 }
 
 bool Client::update(){
-	
-	session->update();
-
-	return true;
+	return session->update();
 }
 
 

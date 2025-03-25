@@ -2,26 +2,22 @@
 
 #include <session_linux.h>
 
-#include <iostream>
-#include <string.h> //@todo needed?
-
 LinuxSession::LinuxSession() {
 	peers = new std::vector<Peer>();
-
+	lastHeartbeatToStun = std::chrono::steady_clock::now();
 }
 
 LinuxSession::~LinuxSession() {
 	close(sockFD);
 }
 
-bool LinuxSession::init(int portNumber) {
+bool LinuxSession::init(const int& portNumber) {
 	char ip[20];
 	strcpy(ip, "127.0.0.1");
 
-	addr = populateAddress(ip, portNumber);
-	sockFD = createSocket<int>(ip, addr);
+	localAddr = populateAddress(ip, portNumber);
+	sockFD = createSocket<int>(localAddr);
 
-	sockaddr_in stunAddr;
 	stunAddr.sin_family = AF_INET;
 	stunAddr.sin_port = htons(STUN_SERVER_PORT);
 	if (inet_pton(AF_INET, STUN_SERVER_IP, &stunAddr.sin_addr) <= 0) {
@@ -37,7 +33,7 @@ bool LinuxSession::init(int portNumber) {
 	char buffer[4096];
 	socklen_t serverAddrLen = sizeof(stunAddr);
 	int bytesReceived = recvfrom(sockFD, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*) &stunAddr, &serverAddrLen);
-
+	
 	if (bytesReceived > 0) {
 		buffer[bytesReceived] = '\0';
 		std::cout << "Server response: " << buffer << std::endl;
@@ -45,7 +41,7 @@ bool LinuxSession::init(int portNumber) {
 	else {
 		std::cerr << "No response from server or error occurred" << std::endl;
 	}
-
+	
 	// Get the list of clients
 	std::string listMessage = "LIST:";
 	sendto(sockFD, listMessage.c_str(), listMessage.length(), 0, (struct sockaddr*)&stunAddr, sizeof(stunAddr));
@@ -69,6 +65,10 @@ bool LinuxSession::init(int portNumber) {
 		}
 	}
 
+	// Set socket to non-blocking mode
+	int flags = fcntl(sockFD, F_GETFL, 0);
+	fcntl(sockFD, F_SETFL, flags | O_NONBLOCK);
+
 	// ping each client
 	for (Peer peer : *peers) {
 		std::string pingMessage = "PING";
@@ -82,8 +82,28 @@ bool LinuxSession::init(int portNumber) {
 }
 
 bool LinuxSession::update() {
-	recvData<int>(sockFD);
-	sendHeartbeat<int>(sockFD, addr);
+	auto now = std::chrono::steady_clock::now();
+	if ((now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
+		sendHeartbeatToStun<int>(sockFD, stunAddr);
+		lastHeartbeatToStun = now;
+	}
+
+	auto [success, data, addr] = recvData<int>(sockFD);
+
+	if (success) {
+		std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
+		std::cout << "Received data: " << received_str << std::endl;
+
+        // Processing data received
+		if (received_str == "PING") {
+			std::string pongMessage = "PONG";
+			sendto(sockFD, pongMessage.c_str(), pongMessage.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
+			peers->push_back(Peer(addr));
+		}
+		else if (received_str == "PING") {
+			peers->push_back(Peer(addr));
+		}
+    }
 
 	return true;
 }

@@ -1,6 +1,6 @@
 #include <network_handler.h>
 
-sockaddr_in populateAddress(const char* ip, const int port){
+sockaddr_in populateAddress(const char* ip, const int& port) {
 	struct sockaddr_in si;
 
 	memset(&si, 0, sizeof(si));
