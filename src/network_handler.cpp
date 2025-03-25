@@ -9,8 +9,8 @@ sockaddr_in populateAddress(const char* ip, const int& port) {
 
 	// Convert IP address to binary
 	if (inet_pton(AF_INET, ip, &si.sin_addr) <= 0) {
-		std::cout << "Error converting IP address to binary, for IP " << ip << " and port " << port << std::endl;
-		perror("inet_pton failed");
+		std::string error = "Error converting IP address to binary, for IP " + std::string(ip) + " and port " + std::to_string(port);
+		outputError(error);
 	}
 
 	return si;
