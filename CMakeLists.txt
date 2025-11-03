@@ -30,15 +30,7 @@ target_include_directories(
     "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 )
 
-# executable
-add_executable(juntos_exe src/main.cpp)
-add_executable(juntos::exe ALIAS juntos_exe)
-
-set_property(TARGET juntos_exe PROPERTY OUTPUT_NAME juntos)
-
-# link
-if (WIN32)
-    target_link_libraries(juntos_exe PRIVATE juntos_lib wsock32 ws2_32)
-else()
-    target_link_libraries(juntos_exe PRIVATE juntos_lib pthread)
+option(JUNTOS_BUILD_EXAMPLES "Build example applications" OFF)
+if(JUNTOS_BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
