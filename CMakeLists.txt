@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 set(CMAKE_CXX_EXTENSIONS Off)
 
-# library
+# Library gen
 add_library(
     juntos_lib OBJECT
     src/client.cpp
@@ -30,15 +30,15 @@ target_include_directories(
     "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 )
 
-# executable
-add_executable(juntos_exe src/main.cpp)
-add_executable(juntos::exe ALIAS juntos_exe)
-
-set_property(TARGET juntos_exe PROPERTY OUTPUT_NAME juntos)
-
-# link
+# Link platform-specific libraries
 if (WIN32)
-    target_link_libraries(juntos_exe PRIVATE juntos_lib wsock32 ws2_32)
+    target_link_libraries(juntos_lib PUBLIC wsock32 ws2_32)
 else()
-    target_link_libraries(juntos_exe PRIVATE juntos_lib pthread)
+    target_link_libraries(juntos_lib PUBLIC pthread)
+endif()
+
+# Examples CMake option
+option(JUNTOS_BUILD_EXAMPLES "Build example applications" OFF)
+if(JUNTOS_BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
