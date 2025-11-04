@@ -1,17 +1,21 @@
 # juntos
 
-Welcome to Project Juntos, a peer-to-peer UDP game networking library built from scratch for both performance and anti-cheat.
+Welcome to Project Juntos, a peer-to-peer UDP networking library built from scratch for both performance.
 
-This project is currently in active development, and I welcome any-and-all issues/PR's!
+This project is currently in active development and I welcome any issues/PR's!
 
 # Building with CMake
 
 ## Prerequisites
 
-* C++20 (I use the clang++-16 compiler).
+* C++20 (I'm using clang++-16).
 * Python 3 (locally developed with 3.13.2).
 
-## Build
+## How to Integrate Juntos into your Project
+
+Feel free to add my repo as a submodule! If you're looking for an example, my distributed network simulator project, [Orla](github.com/nmstory/orla) is built using Juntos.
+
+## Building Juntos as a Standalone Project with Examples
 
 ### Linux
 Here's the simple steps, from the root directory of the project:
@@ -22,13 +26,13 @@ mkdir build && cd build
 
 Then build:
 ```sh
-cmake .. && make
+cmake -D JUNTOS_BUILD_EXAMPLES=ON .. && make
 ```
 
 Finally, run:
 ```sh
 python3 ../stun.py &
-./juntos {DESIRED_PORT_NUMBER}
+./examples/echo-server/juntos_echo {DESIRED_PORT_NUMBER}
 ```
 
 ### Windows
@@ -40,7 +44,6 @@ I'm currently using Microsoft's Visual Studio 2022, which has support to compile
 
 Crediting projects utilised for inspiration/support
 * https://github.com/mas-bandwidth/yojimbo
-* https://github.com/friendlyanon/cmake-init
 
 ## Most importantly...
 
