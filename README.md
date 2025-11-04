@@ -1,4 +1,4 @@
-# juntos
+# Juntos
 
 Welcome to Project Juntos, a peer-to-peer UDP networking library built from scratch for both performance.
 
