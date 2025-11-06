@@ -74,8 +74,8 @@ T createSocket(sockaddr_in& addr) {
 	@returns bool: whether data was sent successfully
 */
 template <typename T>
-bool sendData(const T& sendSockFD, const sockaddr_in& recvAddr, const std::span<const std::byte>& string, const size_t& length) {
-	int byteCount = sendto(sendSockFD, string, length, 0, (struct sockaddr *)&recvAddr, sizeof(recvAddr));
+bool sendData(const T& sendSockFD, const sockaddr_in& recvAddr, const std::span<const std::byte>& str, const size_t& length) {
+	int byteCount = sendto(sendSockFD, str.data(), length, 0, (struct sockaddr *)&recvAddr, sizeof(recvAddr));
 
 	if (byteCount > 0) {
 		return true;
