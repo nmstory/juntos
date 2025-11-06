@@ -11,10 +11,14 @@
 #include <winnt.h>
 
 using ssize_t = std::make_signed_t<size_t>;
+#include <winsock2.h>
+using Socket = SOCKET;
 #else // only linux
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+
+using Socket = int;
 #endif

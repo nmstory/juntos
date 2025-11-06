@@ -38,6 +38,8 @@ public:
 		@return True/False whether client updated successfully or not
 	*/
 	virtual bool update() = 0;
+
+	virtual Socket getSocketFD() = 0;
 protected:
 	std::vector<Peer>* peers;
 	std::chrono::time_point<std::chrono::steady_clock> lastHeartbeatToStun; // Time of last heartbeat sent to the STUN server
