@@ -14,7 +14,9 @@ public:
 	WindowsSession();
 	~WindowsSession();
 
-	bool init(const int& portNumber) override;
+	bool initSessionToStun(const int& portNumber) override;
+	bool initSessionSolo(const std::string& hostname, const int& portNumber) override;
+	Peer addPeer(const std::string& destHostname, const int& destPort) override;
 	bool update() override;
 private:
 	SOCKET socket;

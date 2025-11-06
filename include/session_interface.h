@@ -22,10 +22,16 @@ public:
 	~SessionInterface() = default;
 
 	/*
-		@brief Initialise session functionality
+		@brief Initialise session functionality by contacting the STUN server
+		@param portNumber The port number to use for the local socket
 		@return True/False whether client initialisation succeeded or failed
 	*/
-	virtual bool init(const int& portNumber) = 0;
+	virtual bool initSessionToStun(const int& portNumber) = 0;
+
+
+	virtual bool initSessionSolo(const std::string& hostname, const int& portNumber) = 0;
+
+	virtual Peer addPeer(const std::string& destHostname, const int& destPort) = 0;
 
 	/*
 		@brief Update the Session

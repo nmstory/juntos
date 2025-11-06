@@ -22,7 +22,7 @@ extern std::unique_ptr<SessionInterface> CreateSession() {
 bool Client::init(int port) {
 	session = CreateSession();
 
-	session->init(port);
+	session->initSessionToStun(port);
 
 	return true;
 }
