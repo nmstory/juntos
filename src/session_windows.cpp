@@ -18,7 +18,7 @@ WindowsSession::~WindowsSession() {
 	WSACleanup();
 }
 
-bool WindowsSession::init(const int& portNumber) {
+bool WindowsSession::initSessionToStun(const int& portNumber) {
 	char ip[20];
 	strcpy(ip, "127.0.0.1");
 
@@ -95,6 +95,17 @@ bool WindowsSession::init(const int& portNumber) {
 	}
 
 	return true;
+}
+
+bool WindowsSession::initSessionSolo(const std::string& hostname, const int& portNumber) {
+	std::cout << "windows init with hostname called" << std::endl;
+	return true;
+}
+
+Peer WindowsSession::addPeer(const std::string& destHostname, const int& destPort) {
+	sockaddr_in peerAddr = populateAddress(destHostname.c_str(), destPort);
+	peers->push_back(Peer(peerAddr));
+	return Peer(peerAddr);
 }
 
 bool WindowsSession::update() {

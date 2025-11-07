@@ -12,8 +12,14 @@ public:
 	LinuxSession();
 	~LinuxSession();
 
-	bool init(const int& portNumber) override;
+	bool initSessionToStun(const int& portNumber) override;
+	bool initSessionSolo(const std::string& hostname, const int& portNumber) override;
+	Peer addPeer(const std::string& destHostname, const int& destPort) override;
 	bool update() override;
+
+	Socket getSocketFD() override {
+		return sockFD;
+	};
 private:
 	// Linux Socket File Descriptor
 	int sockFD;

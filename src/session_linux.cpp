@@ -11,7 +11,8 @@ LinuxSession::~LinuxSession() {
 	close(sockFD);
 }
 
-bool LinuxSession::init(const int& portNumber) {
+bool LinuxSession::initSessionToStun(const int& portNumber) {
+	// TODO: if already initialised, inform and back out
 	char ip[20];
 	strcpy(ip, "127.0.0.1");
 
@@ -80,6 +81,20 @@ bool LinuxSession::init(const int& portNumber) {
 
 	return true;
 }
+
+bool LinuxSession::initSessionSolo(const std::string& localHostname, const int& localPort) {
+	// TODO: if already initialised, inform and back out
+	std::cout << "Linux init with hostname called" << std::endl;
+	localAddr = populateAddress(localHostname.c_str(), localPort);
+	sockFD = createSocket<int>(localAddr);
+	return true;
+}
+
+Peer LinuxSession::addPeer(const std::string& destHostname, const int& destPort) {
+	sockaddr_in peerAddr = populateAddress(destHostname.c_str(), destPort);
+	//peers->push_back(Peer(peerAddr));
+	return Peer(peerAddr);
+}	
 
 bool LinuxSession::update() {
 	auto now = std::chrono::steady_clock::now();

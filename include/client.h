@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <common.h>
+#include <common_juntos.h>
 
 #include <memory>
 #include <session_interface.h>

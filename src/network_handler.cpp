@@ -1,17 +1,20 @@
+#include <netdb.h>
 #include <network_handler.h>
 
-sockaddr_in populateAddress(const char* ip, const int& port) {
-	struct sockaddr_in si;
+sockaddr_in populateAddress(const char* host, const int& port) {
+    struct addrinfo hints{}, *res = nullptr;
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
 
-	memset(&si, 0, sizeof(si));
-	si.sin_family = AF_INET;
-	si.sin_port = htons(port);
+    std::string port_str = std::to_string(port);
+    int err = getaddrinfo(host, port_str.c_str(), &hints, &res);
+    if (err != 0 || !res) {
+        outputError("getaddrinfo failed for host " + std::string(host) + ": " + gai_strerror(err));
+        sockaddr_in empty{};
+        return empty;
+    }
 
-	// Convert IP address to binary
-	if (inet_pton(AF_INET, ip, &si.sin_addr) <= 0) {
-		std::string error = "Error converting IP address to binary, for IP " + std::string(ip) + " and port " + std::to_string(port);
-		outputError(error);
-	}
-
-	return si;
+    sockaddr_in addr = *(reinterpret_cast<sockaddr_in*>(res->ai_addr));
+    freeaddrinfo(res);
+    return addr;
 }
