@@ -3,6 +3,7 @@
 #include <common_juntos.h>
 #include <array>
 #include <cstddef>
+#include <vector>
 #include <iostream>
 #include <span>
 #include <string>
@@ -96,14 +97,14 @@ bool sendData(const T& sendSockFD, const sockaddr_in& recvAddr, const std::span<
 		- sender_address: address of the sender
 */ 
 template <typename T>
-std::tuple<bool, std::span<const std::byte>, sockaddr_in> recvData(T recvSockFD) {
+std::tuple<bool, std::vector<std::byte>, sockaddr_in> recvData(T recvSockFD) {
 	std::array<std::byte, 65507> buffer;  // Max safe UDP payload size
     sockaddr_in sender_addr{};
     socklen_t addr_len = sizeof(sender_addr);
 
     ssize_t byteCount = recvfrom(
         recvSockFD,
-        reinterpret_cast<char*>(buffer.data()), //reinterpret_cast<char*> as Winsock uses char*, whilst Linux uses void*
+        reinterpret_cast<char*>(buffer.data()), // Winsock uses char*, Linux uses void*
         static_cast<int>(buffer.size()),
         0,
         reinterpret_cast<sockaddr*>(&sender_addr),
@@ -111,7 +112,7 @@ std::tuple<bool, std::span<const std::byte>, sockaddr_in> recvData(T recvSockFD)
     );
 
     if (byteCount > 0) {
-        return {true, std::span<const std::byte>(buffer.data(), byteCount), sender_addr};
+        return {true, std::vector<std::byte>(buffer.begin(), buffer.begin() + byteCount), sender_addr};
     }
     
 #ifdef _WIN32
