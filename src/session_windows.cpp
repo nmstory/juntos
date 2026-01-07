@@ -102,7 +102,7 @@ bool WindowsSession::initSessionSolo(const std::string& hostname, const int& por
 	return true;
 }
 
-Peer WindowsSession::addPeer(const std::string& destHostname, const int& destPort) {
+Peer WindowsSession::setupPeer(const std::string& destHostname, const int& destPort) {
 	sockaddr_in peerAddr = populateAddress(destHostname.c_str(), destPort);
 	peers->push_back(Peer(peerAddr));
 	return Peer(peerAddr);

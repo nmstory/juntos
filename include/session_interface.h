@@ -36,12 +36,12 @@ public:
 	virtual bool initSessionToStun(const int& portNumber) = 0;
 
 	/*
-		@brief Add a peer to the session
+		@brief Create a Peer by configuring it's low-level data
 		@param destHostname The hostname of the peer to add
 		@param destPort The port number of the peer to add
 		@return The added peer
 	*/
-	virtual Peer addPeer(const std::string& destHostname, const int& destPort) = 0;
+	virtual Peer setupPeer(const std::string& destHostname, const int& destPort) = 0;
 
 	/*
 		@brief Update the Session

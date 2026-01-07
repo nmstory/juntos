@@ -90,7 +90,7 @@ bool LinuxSession::initSessionSolo(const std::string& localHostname, const int& 
 	return true;
 }
 
-Peer LinuxSession::addPeer(const std::string& destHostname, const int& destPort) {
+Peer LinuxSession::setupPeer(const std::string& destHostname, const int& destPort) {
 	sockaddr_in peerAddr = populateAddress(destHostname.c_str(), destPort);
 	//peers->push_back(Peer(peerAddr));
 	return Peer(peerAddr);
