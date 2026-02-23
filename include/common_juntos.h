@@ -13,7 +13,8 @@
 using ssize_t = std::make_signed_t<size_t>;
 #include <winsock2.h>
 using Socket = SOCKET;
-#else // only linux
+#elif defined(__unix__) || defined(__APPLE__)
+#define JUNTOS_UNIX
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

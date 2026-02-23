@@ -12,7 +12,7 @@ Client::~Client() {
 extern std::unique_ptr<SessionInterface> CreateSession() {
 	#ifdef _WIN32
 		return std::make_unique<WindowsSession>();
-	#elif __linux__
+	#elif defined(JUNTOS_UNIX)
 		return std::make_unique<LinuxSession>();
 	#else
 		throw std::runtime_error("Unsupported platform");
