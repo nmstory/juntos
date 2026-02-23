@@ -43,10 +43,11 @@ T createSocket(sockaddr_in& addr) {
 	T s;
 	
 #ifdef _WIN32
-	if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET){
+	if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
 #elif __linux__
-	if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1){
+	if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
 #endif
+	{
 		std::puts("Error creating socket!\n");
 #ifdef _WIN32
 		std::cout << "Error initialising socket: " << WSAGetLastError() << std::endl;
