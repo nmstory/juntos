@@ -28,7 +28,7 @@ inline void outputError(const std::string& error) {
     std::cerr << error << std::endl;
 #if _WIN32
     std::cout << WSAGetLastError() << std::endl;
-#elif __linux__
+#elif defined(JUNTOS_UNIX)
     std::perror("error");
 #endif
 }
@@ -44,7 +44,7 @@ T createSocket(sockaddr_in& addr) {
 	
 #ifdef _WIN32
 	if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
-#elif __linux__
+#elif defined(JUNTOS_UNIX)
 	if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
 #endif
 	{
@@ -53,7 +53,7 @@ T createSocket(sockaddr_in& addr) {
 		std::cout << "Error initialising socket: " << WSAGetLastError() << std::endl;
 		WSACleanup();
 		closesocket(s);
-#elif __linux__
+#elif defined(JUNTOS_UNIX)
 		close(s);
 #endif
 		return 0;
@@ -123,7 +123,7 @@ std::tuple<bool, std::vector<std::byte>, sockaddr_in> recvData(T recvSockFD) {
             std::cerr << "recvfrom error: " << err << std::endl;
         }
     }
-#elif __linux__
+#elif defined(JUNTOS_UNIX)
     if (byteCount < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
         std::perror("recvfrom error");
     }

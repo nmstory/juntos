@@ -9,7 +9,6 @@
 #include <vector>
 
 #include <network_handler.h>
-#include <session_interface.h>
 
 struct Peer {
 	Peer(const sockaddr_in& rhs) : sendAddr(rhs) { }

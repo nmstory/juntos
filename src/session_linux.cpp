@@ -1,4 +1,6 @@
-#ifdef __linux__
+#include <common_juntos.h>
+
+#ifdef JUNTOS_UNIX
 
 #include <session_linux.h>
 
@@ -123,4 +125,4 @@ bool LinuxSession::update() {
 	return true;
 }
 
-#endif
+#endif // JUNTOS_UNIX

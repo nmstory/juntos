@@ -1,6 +1,8 @@
 #pragma once
 
-#ifdef __linux__
+#include <common_juntos.h>
+
+#ifdef JUNTOS_UNIX
 
 #include <session_interface.h>
 
