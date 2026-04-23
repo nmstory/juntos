@@ -51,6 +51,7 @@ bool LinuxSession::initSessionToStun(const int& portNumber) {
 	
 	bytesReceived = recvfrom(sockFD, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&stunAddr, &serverAddrLen);
 	if (bytesReceived > 0) {
+		buffer[bytesReceived] = '\0';
 		if (bytesReceived == 5) {
 			std::puts("Currently waiting for other clients to connect! Hang on :)");
 			return 0;
@@ -58,10 +59,11 @@ bool LinuxSession::initSessionToStun(const int& portNumber) {
 		else {
 			char* ip;
 			char* splitterIndex = strtok(buffer, ":;");
-			
+
 			while (splitterIndex != NULL) {
 				ip = splitterIndex;
 				splitterIndex = strtok(NULL, ":;");
+				if (splitterIndex == NULL) break;
 				peers->push_back(Peer(populateAddress(ip, atoi(splitterIndex))));
 				splitterIndex = strtok(NULL, ":;");
 			}
