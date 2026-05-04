@@ -12,7 +12,9 @@
 
 struct Peer {
 	Peer(const sockaddr_in& rhs) : sendAddr(rhs) { }
-	struct sockaddr_in sendAddr;
+    Peer(const Peer& other) = default;
+    Peer(Peer&& peer) : sendAddr(peer.sendAddr) { }
+    struct sockaddr_in sendAddr;
 };
 
 class SessionInterface {
