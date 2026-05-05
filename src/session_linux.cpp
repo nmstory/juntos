@@ -3,6 +3,7 @@
 #ifdef JUNTOS_UNIX
 
 #include <session_linux.h>
+#include <cstring>
 
 LinuxSession::LinuxSession() {
 	peers = new std::vector<Peer>();
@@ -96,11 +97,10 @@ bool LinuxSession::initSessionSolo(const std::string& localHostname, const int& 
 
 Peer LinuxSession::setupPeer(const std::string& destHostname, const int& destPort) {
 	sockaddr_in peerAddr = populateAddress(destHostname.c_str(), destPort);
-	//peers->push_back(Peer(peerAddr));
 	return Peer(peerAddr);
 }	
 
-bool LinuxSession::update() {
+std::optional<std::vector<uint8_t>> LinuxSession::update() {
 	auto now = std::chrono::steady_clock::now();
 	if ((now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
 		sendHeartbeatToStun<int>(sockFD, stunAddr);
@@ -111,19 +111,30 @@ bool LinuxSession::update() {
 
 	if (success) {
 		std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
-		std::cout << "Received data: " << received_str << std::endl;
 
-		// Processing data received
 		if (received_str == "PING") {
 			std::string pongMessage = "PONG";
 			sendto(sockFD, pongMessage.c_str(), pongMessage.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
 			peers->push_back(Peer(addr));
+			return std::nullopt;
 		}
-		else if (received_str == "PING") {
+		if (received_str == "PONG") {
 			peers->push_back(Peer(addr));
+			return std::nullopt;
 		}
+
+		std::vector<uint8_t> appData(data.size());
+		std::memcpy(appData.data(), data.data(), data.size());
+		return appData;
 	}
 
+	return std::nullopt;
+}
+
+bool LinuxSession::send(const uint8_t* data, size_t len) {
+	for (const Peer& peer : *peers) {
+		sendto(sockFD, data, len, 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
+	}
 	return true;
 }
 

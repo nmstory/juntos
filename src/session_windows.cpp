@@ -1,6 +1,7 @@
 #ifdef _WIN32
 
 #include <session_windows.h>
+#include <cstring>
 
 WindowsSession::WindowsSession() {
 	peers = new std::vector<Peer>();
@@ -108,7 +109,7 @@ Peer WindowsSession::setupPeer(const std::string& destHostname, const int& destP
 	return Peer(peerAddr);
 }
 
-bool WindowsSession::update() {
+std::optional<std::vector<uint8_t>> WindowsSession::update() {
 	auto now = std::chrono::steady_clock::now();
 	if ((now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
 		sendHeartbeatToStun<SOCKET>(socket, stunAddr);
@@ -119,19 +120,31 @@ bool WindowsSession::update() {
 
 	if (success) {
 		std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
-		std::cout << "Received data: " << received_str << std::endl;
 
-		// Processing data received
 		if (received_str == "PING") {
 			std::string pongMessage = "PONG";
 			sendto(socket, pongMessage.c_str(), pongMessage.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
 			peers->push_back(Peer(addr));
+			return std::nullopt;
 		}
-		else if (received_str == "PING") {
+		if (received_str == "PONG") {
 			peers->push_back(Peer(addr));
+			return std::nullopt;
 		}
+
+		std::vector<uint8_t> appData(data.size());
+		std::memcpy(appData.data(), data.data(), data.size());
+		return appData;
 	}
-	
+
+	return std::nullopt;
+}
+
+bool WindowsSession::send(const uint8_t* data, size_t len) {
+	for (const Peer& peer : *peers) {
+		sendto(socket, reinterpret_cast<const char*>(data), static_cast<int>(len), 0,
+		       (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
+	}
 	return true;
 }
 

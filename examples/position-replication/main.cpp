@@ -2,6 +2,7 @@
 
 #include <client.h>
 #include <iostream>
+#include "position.h"
 
 int main(int argc, char *argv[]) {
 	if (argc < 2) {
@@ -9,8 +10,12 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	PositionReplicable position;
 	Client client;
-	client.init(std::stoi(argv[1]));
+	client.init(std::stoi(argv[1]), &position);
+
+	position.x = 1.0f;
+	position.y = 2.0f;
 
 	while (true) {
 		if (!client.update()) {

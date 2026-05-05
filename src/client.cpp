@@ -21,15 +21,29 @@ extern std::unique_ptr<SessionInterface> CreateSession() {
 
 bool Client::init(int port) {
 	session = CreateSession();
-
 	session->initSessionToStun(port);
-
 	return true;
 }
 
-bool Client::update(){
-	return session->update();
+bool Client::init(int port, Replicable* rep) {
+	replicable = rep;
+	session = CreateSession();
+	session->initSessionToStun(port);
+	return true;
 }
 
+bool Client::update() {
+	if (replicable) {
+		auto payload = replicable->serialize();
+		if (payload) {
+			session->send(payload->data(), payload->size());
+		}
+	}
 
+	auto received = session->update();
+	if (received && replicable) {
+		replicable->deserialize(received->data(), received->size());
+	}
 
+	return true;
+}

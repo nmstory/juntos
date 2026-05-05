@@ -17,7 +17,8 @@ public:
 	bool initSessionToStun(const int& portNumber) override;
 	bool initSessionSolo(const std::string& hostname, const int& portNumber) override;
 	Peer setupPeer(const std::string& destHostname, const int& destPort) override;
-	bool update() override;
+	bool send(const uint8_t* data, size_t len) override;
+	std::optional<std::vector<uint8_t>> update() override;
 
 	Socket getSocketFD() override {
 		return sockFD;

@@ -3,7 +3,9 @@
 #include <common_juntos.h>
 
 #include <chrono>
+#include <cstdint>
 #include <iostream>
+#include <optional>
 #include <string_view>
 #include <thread>
 #include <vector>
@@ -45,10 +47,15 @@ public:
 	virtual Peer setupPeer(const std::string& destHostname, const int& destPort) = 0;
 
 	/*
-		@brief Update the Session
-		@return True/False whether client updated successfully or not
+		@brief Update the Session — handle protocol traffic and return any application-level data received
+		@return Received application bytes, or nullopt if nothing (or only protocol messages) arrived
 	*/
-	virtual bool update() = 0;
+	virtual std::optional<std::vector<uint8_t>> update() = 0;
+
+	/*
+		@brief Send bytes to all known peers
+	*/
+	virtual bool send(const uint8_t* data, size_t len) = 0;
 
 	/*
 		@brief Get the socket file descriptor
