@@ -1,9 +1,9 @@
 #pragma once
 
-
 #include <common_juntos.h>
 
 #include <memory>
+#include <replicable.h>
 #include <session_interface.h>
 #include <session_linux.h>
 #include <session_windows.h>
@@ -13,12 +13,11 @@ public:
 	Client();
 	~Client();
 
-	/*
-		@brief Initialise Client Functionality
-		@return true/false whether client initialisation succeeded or failed
-	*/
+
 	bool init(int port);
+	bool init(int port, Replicable* replicable);
 	bool update();
 private:
 	std::unique_ptr<SessionInterface> session;
+	Replicable* replicable = nullptr;
 };
