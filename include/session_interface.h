@@ -16,6 +16,7 @@ struct Peer {
 	Peer(const sockaddr_in& rhs) : sendAddr(rhs) { }
     Peer(const Peer& other) = default;
     Peer(Peer&& peer) : sendAddr(peer.sendAddr) { }
+	Peer& operator=(Peer&& other) noexcept { sendAddr = other.sendAddr; return *this; }
     struct sockaddr_in sendAddr;
 };
 
