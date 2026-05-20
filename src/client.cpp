@@ -25,7 +25,8 @@ bool Client::init(int port) {
 	return true;
 }
 
-bool Client::init(int port, Replicable* rep) {
+bool Client::init(int clientID, int port, Replicable* rep) {
+	m_ClientID = clientID;
 	replicable = rep;
 	session = CreateSession();
 	session->initSessionToStun(port);
