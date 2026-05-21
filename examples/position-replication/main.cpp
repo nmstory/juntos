@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 	Client client;
 	client.init(std::stoi(argv[1]), std::stoi(argv[2]), &position);
 
-	position.id = makeNetObjectID(std::stoi(argv[1]), 1);
+	position.id = makeID(std::stoi(argv[1]), 1);
 	position.x = 1.0f;
 	position.y = 2.0f;
 

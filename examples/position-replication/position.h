@@ -1,5 +1,6 @@
 #pragma once
 
+#include <packet.h>
 #include <replicable.h>
 #include <cstring>
 #include <iostream>

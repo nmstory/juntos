@@ -1,32 +1,26 @@
+#pragma once
+
 #include <../examples/position-replication/config.h>
 #include <cstdint>
 #include <vector>
 
-using NetObjectID = uint32_t;
-
-#pragma pack(push, 1)
-struct PacketHeader { // packet structure: [objectID][type][size][payload bytes]
-    NetObjectID objectID;
-    uint8_t type;
-    uint16_t size;
-};
-#pragma pack(pop)
+using ID = uint32_t;
 
 template<typename T>
 struct Packet {
-    NetObjectID objectID;
+    ID id; // client ID & net object ID
     T data;
 };
 
-inline NetObjectID makeNetObjectID(uint32_t clientID, uint32_t localID) {
+inline ID makeID(uint32_t clientID, uint32_t localID) {
     return ((clientID & CLIENT_MASK) << LOCAL_BITS) |
            (localID  & LOCAL_MASK);
 }
 
-inline uint32_t getClientID(NetObjectID id) {
+inline uint32_t getClientID(ID id) {
     return (id >> LOCAL_BITS) & CLIENT_MASK;
 }
 
-inline uint32_t getLocalID(NetObjectID id) {
+inline uint32_t getObjectID(ID id) {
     return id & LOCAL_MASK;
 }
