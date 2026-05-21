@@ -16,8 +16,8 @@ int main(int argc, char *argv[]) {
 	client.init(std::stoi(argv[1]), std::stoi(argv[2]), &position);
 
 	position.id = makeID(std::stoi(argv[1]), 1);
-	position.x = 1.0f;
-	position.y = 2.0f;
+	position.position.x = 1.0f;
+	position.position.y = 2.0f;
 
 	while (true) {
 		if (!client.update()) {
