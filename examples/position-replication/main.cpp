@@ -2,20 +2,22 @@
 
 #include <client.h>
 #include <iostream>
-#include "position.h"
+#include <packet.h>
+#include <position.h>
 
 int main(int argc, char *argv[]) {
-	if (argc < 2) {
+	if (argc < 3) {
 		std::puts("Insufficient number of parameters entered. Please define port number.");
 		return 1;
 	}
 
 	PositionReplicable position;
 	Client client;
-	client.init(std::stoi(argv[1]), &position);
+	client.init(std::stoi(argv[1]), std::stoi(argv[2]), &position);
 
-	position.x = 1.0f;
-	position.y = 2.0f;
+	position.id = makeID(std::stoi(argv[1]), 1);
+	position.position.x = 1.0f;
+	position.position.y = 2.0f;
 
 	while (true) {
 		if (!client.update()) {
