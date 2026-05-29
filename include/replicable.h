@@ -1,15 +1,20 @@
-#pragma once
-
-#include <cstddef>
-#include <cstdint>
-#include <optional>
-#include <vector>
+#include <include/stream.h>
 
 class Replicable {
 public:
-	virtual std::optional<std::vector<uint8_t>> serialize() = 0;
-	virtual void deserialize(const uint8_t* data, size_t len) = 0;
-	virtual ~Replicable() = default;
+    virtual bool process(WriteStream& s) = 0;
+    virtual bool process(ReadStream& s)  = 0;
+    virtual ~Replicable() = default;
+    int id = 0;
+};
 
-	int id = 0; // Unique identifier for the replicable object
+template<typename Derived>
+class ReplicableT : public Replicable {
+public:
+    bool process(WriteStream& s) override {
+        return static_cast<Derived*>(this)->process_impl(s);
+    }
+    bool process(ReadStream& s) override {
+        return static_cast<Derived*>(this)->process_impl(s);
+    }
 };
