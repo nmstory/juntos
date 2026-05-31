@@ -87,11 +87,21 @@ bool LinuxSession::initSessionToStun(const int& portNumber) {
 	return true;
 }
 
-bool LinuxSession::initSessionSolo(const std::string& localHostname, const int& localPort) {
+bool LinuxSession::initSessionSolo(const std::string& localHostname, const int& portNumber, std::optional<std::chrono::milliseconds> recvTimeout) {
 	// TODO: if already initialised, inform and back out
 	std::cout << "Linux init with hostname called" << std::endl;
-	localAddr = populateAddress(localHostname.c_str(), localPort);
+	localAddr = populateAddress(localHostname.c_str(), portNumber);
 	sockFD = createSocket<int>(localAddr);
+
+	if (recvTimeout) {
+        struct timeval tv{};
+        tv.tv_sec  = recvTimeout->count() / 1000;
+        tv.tv_usec = (recvTimeout->count() % 1000) * 1000;
+        if (setsockopt(sockFD, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+            std::cerr << "Failed to set SO_RCVTIMEO: " << std::strerror(errno) << std::endl;
+        }
+    }
+
 	return true;
 }
 
