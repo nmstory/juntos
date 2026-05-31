@@ -98,7 +98,7 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 	return true;
 }
 
-bool WindowsSession::initSessionSolo(const std::string& hostname, const int& portNumber) {
+bool WindowsSession::initSessionSolo(const std::string& hostname, const int& portNumber, std::optional<std::chrono::milliseconds> recvTimeout) {
 	std::cout << "windows init with hostname called" << std::endl;
 	return true;
 }

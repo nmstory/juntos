@@ -28,9 +28,11 @@ public:
 		@brief Initialise session functionality without contacting the STUN server
 		@param hostname The hostname to bind the local socket to
 		@param portNumber The port number to use for the local socket
+		@param recvTimeout Optional receive timeout
 		@return True/False whether client initialisation succeeded or failed
 	*/
-	virtual bool initSessionSolo(const std::string& hostname, const int& portNumber) = 0;
+	virtual bool initSessionSolo(const std::string& hostname, const int& portNumber,
+											std::optional<std::chrono::milliseconds> recvTimeout = std::nullopt) = 0;
 
 	/*
 		@brief Initialise session functionality by contacting the STUN server

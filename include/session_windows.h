@@ -15,7 +15,7 @@ public:
 	~WindowsSession();
 
 	bool initSessionToStun(const int& portNumber) override;
-	bool initSessionSolo(const std::string& hostname, const int& portNumber) override;
+	bool initSessionSolo(const std::string& hostname, const int& portNumber, std::optional<std::chrono::milliseconds> recvTimeout = std::nullopt) override;
 	Peer setupPeer(const std::string& destHostname, const int& destPort) override;
 	bool send(const uint8_t* data, size_t len) override;
 	std::optional<std::vector<uint8_t>> update() override;
