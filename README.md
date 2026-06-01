@@ -1,6 +1,6 @@
 # Juntos
 
-Welcome to Project Juntos, a peer-to-peer UDP networking library built from scratch for both performance.
+Welcome to Project Juntos, a peer-to-peer UDP networking library built from scratch for performance.
 
 This project is currently in active development and I welcome any issues/PR's!
 
