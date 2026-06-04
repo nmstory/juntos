@@ -27,7 +27,6 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 	localAddr = populateAddress(ip, portNumber);
 	socket = createSocket<SOCKET>(localAddr);
 
-	sockaddr_in stunAddr;
 	stunAddr.sin_family = AF_INET;
 	stunAddr.sin_port = htons(STUN_SERVER_PORT);
 	if (inet_pton(AF_INET, STUN_SERVER_IP, &stunAddr.sin_addr) <= 0) {

@@ -21,7 +21,7 @@ public:
 	std::optional<std::vector<uint8_t>> update() override;
 
 	Socket getSocketFD() override {
-		return sockFD;
+		return socket;
 	};
 private:
 	SOCKET socket;
