@@ -23,7 +23,7 @@ struct Peer {
 class SessionInterface {
 public:
 	SessionInterface() = default;
-	~SessionInterface() = default;
+	virtual ~SessionInterface() = default;
 	/*
 		@brief Initialise session functionality without contacting the STUN server
 		@param hostname The hostname to bind the local socket to

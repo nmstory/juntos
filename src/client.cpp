@@ -1,5 +1,8 @@
 #include <client.h>
 
+#include <session_linux.h>
+#include <session_windows.h>
+
 Client::Client() {
 
 }
@@ -19,32 +22,16 @@ extern std::unique_ptr<SessionInterface> CreateSession() {
 	#endif
 }
 
-bool Client::init(int port) {
+bool Client::init(const int port) {
 	session = CreateSession();
 	session->initSessionToStun(port);
 	return true;
 }
 
-bool Client::init(int clientID, int port, Replicable* rep) {
-	m_ClientID = clientID;
-	replicable = rep;
-	session = CreateSession();
-	session->initSessionToStun(port);
-	return true;
+bool Client::send(const uint8_t* data, size_t len) {
+    return session->send(data, len);
 }
 
-bool Client::update() {
-	if (replicable) {
-		auto payload = replicable->serialize();
-		if (payload) {
-			session->send(payload->data(), payload->size());
-		}
-	}
-
-	auto received = session->update();
-	if (received && replicable) {
-		replicable->deserialize(received->data(), received->size());
-	}
-
-	return true;
+std::optional<std::vector<uint8_t>> Client::update() {
+	return session->update();
 }
