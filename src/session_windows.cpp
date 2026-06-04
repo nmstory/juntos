@@ -20,13 +20,13 @@ WindowsSession::~WindowsSession() {
 }
 
 bool WindowsSession::initSessionToStun(const int& portNumber) {
+	stunEnabled = true;
 	char ip[20];
 	strcpy(ip, "127.0.0.1");
 
 	localAddr = populateAddress(ip, portNumber);
 	socket = createSocket<SOCKET>(localAddr);
 
-	sockaddr_in stunAddr;
 	stunAddr.sin_family = AF_INET;
 	stunAddr.sin_port = htons(STUN_SERVER_PORT);
 	if (inet_pton(AF_INET, STUN_SERVER_IP, &stunAddr.sin_addr) <= 0) {
@@ -72,7 +72,7 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 			while (splitterIndex != NULL) {
 				ip = splitterIndex;
 				splitterIndex = strtok(NULL, ":;");
-				peers->push_back(Peer(populateAddress(ip, atoi(splitterIndex))));
+				addPeerIfNew(populateAddress(ip, atoi(splitterIndex)));
 				splitterIndex = strtok(NULL, ":;");
 			}
 		}
@@ -99,19 +99,34 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 }
 
 bool WindowsSession::initSessionSolo(const std::string& hostname, const int& portNumber, std::optional<std::chrono::milliseconds> recvTimeout) {
-	std::cout << "windows init with hostname called" << std::endl;
+	// TODO: if already initialised, inform and back out
+	localAddr = populateAddress(hostname.c_str(), portNumber);
+	socket = createSocket<SOCKET>(localAddr);
+
+	if (recvTimeout) {
+		DWORD timeoutMs = static_cast<DWORD>(recvTimeout->count());
+		if (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeoutMs), sizeof(timeoutMs)) != 0) {
+			std::cerr << "Failed to set SO_RCVTIMEO: " << WSAGetLastError() << std::endl;
+		}
+	}
+
 	return true;
 }
 
 Peer WindowsSession::setupPeer(const std::string& destHostname, const int& destPort) {
 	sockaddr_in peerAddr = populateAddress(destHostname.c_str(), destPort);
-	peers->push_back(Peer(peerAddr));
+	addPeerIfNew(peerAddr);
+
+	// Bootstrap the handshake so the remote end discovers us via its update() PING handler
+	std::string pingMessage = "PING";
+	sendto(socket, pingMessage.c_str(), pingMessage.length(), 0, (struct sockaddr*)&peerAddr, sizeof(peerAddr));
+
 	return Peer(peerAddr);
 }
 
 std::optional<std::vector<uint8_t>> WindowsSession::update() {
 	auto now = std::chrono::steady_clock::now();
-	if ((now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
+	if (stunEnabled && (now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
 		sendHeartbeatToStun<SOCKET>(socket, stunAddr);
 		lastHeartbeatToStun = now;
 	}
@@ -124,11 +139,11 @@ std::optional<std::vector<uint8_t>> WindowsSession::update() {
 		if (received_str == "PING") {
 			std::string pongMessage = "PONG";
 			sendto(socket, pongMessage.c_str(), pongMessage.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
-			peers->push_back(Peer(addr));
+			addPeerIfNew(addr);
 			return std::nullopt;
 		}
 		if (received_str == "PONG") {
-			peers->push_back(Peer(addr));
+			addPeerIfNew(addr);
 			return std::nullopt;
 		}
 

@@ -24,7 +24,17 @@ extern std::unique_ptr<SessionInterface> CreateSession() {
 
 bool Client::init(const int port) {
 	session = CreateSession();
-	session->initSessionToStun(port);
+	return session->initSessionToStun(port);
+}
+
+bool Client::init(const std::string& hostname, const int port,
+		std::optional<std::chrono::milliseconds> recvTimeout) {
+	session = CreateSession();
+	return session->initSessionSolo(hostname, port, recvTimeout);
+}
+
+bool Client::addPeer(const std::string& hostname, const int port) {
+	session->setupPeer(hostname, port);
 	return true;
 }
 
