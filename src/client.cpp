@@ -45,3 +45,7 @@ bool Client::send(const uint8_t* data, size_t len) {
 std::optional<std::vector<uint8_t>> Client::update() {
 	return session->update();
 }
+
+Socket Client::getSocketFD() const {
+    return session->getSocketFD();
+}
