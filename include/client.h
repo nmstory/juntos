@@ -3,21 +3,16 @@
 #include <common_juntos.h>
 
 #include <memory>
-#include <replicable.h>
 #include <session_interface.h>
-#include <session_linux.h>
-#include <session_windows.h>
 
 class Client {
 public:
 	Client();
 	~Client();
 
-	bool init(int port);
-	bool init(int clientID, int port, Replicable* replicable);
-	bool update();
+	bool init(const int port);
+	bool send(const uint8_t* data, size_t len);
+	std::optional<std::vector<uint8_t>> update();
 private:
 	std::unique_ptr<SessionInterface> session;
-	Replicable* replicable = nullptr;
-	int m_ClientID;
 };

@@ -13,9 +13,10 @@ int main(int argc, char *argv[]) {
 	Client client;
 	client.init(std::stoi(argv[1]));
 
-	while(true){
-		if(!client.update()) {
-			return 1;
+	// echo
+	while (true) {
+		if (auto bytes = client.update()) {
+			client.send(bytes->data(), bytes->size());
 		}
 	}
 
