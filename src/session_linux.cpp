@@ -16,6 +16,7 @@ LinuxSession::~LinuxSession() {
 
 bool LinuxSession::initSessionToStun(const int& portNumber) {
 	// TODO: if already initialised, inform and back out
+	stunEnabled = true;
 	char ip[20];
 	strcpy(ip, "127.0.0.1");
 
@@ -65,7 +66,7 @@ bool LinuxSession::initSessionToStun(const int& portNumber) {
 				ip = splitterIndex;
 				splitterIndex = strtok(NULL, ":;");
 				if (splitterIndex == NULL) break;
-				peers->push_back(Peer(populateAddress(ip, atoi(splitterIndex))));
+				addPeerIfNew(populateAddress(ip, atoi(splitterIndex)));
 				splitterIndex = strtok(NULL, ":;");
 			}
 		}
@@ -89,7 +90,6 @@ bool LinuxSession::initSessionToStun(const int& portNumber) {
 
 bool LinuxSession::initSessionSolo(const std::string& localHostname, const int& portNumber, std::optional<std::chrono::milliseconds> recvTimeout) {
 	// TODO: if already initialised, inform and back out
-	std::cout << "Linux init with hostname called" << std::endl;
 	localAddr = populateAddress(localHostname.c_str(), portNumber);
 	sockFD = createSocket<int>(localAddr);
 
@@ -107,12 +107,18 @@ bool LinuxSession::initSessionSolo(const std::string& localHostname, const int& 
 
 Peer LinuxSession::setupPeer(const std::string& destHostname, const int& destPort) {
 	sockaddr_in peerAddr = populateAddress(destHostname.c_str(), destPort);
+	addPeerIfNew(peerAddr);
+
+	// Bootstrap the handshake so the remote end discovers us via its update() PING handler
+	std::string pingMessage = "PING";
+	sendto(sockFD, pingMessage.c_str(), pingMessage.length(), 0, (struct sockaddr*)&peerAddr, sizeof(peerAddr));
+
 	return Peer(peerAddr);
-}	
+}
 
 std::optional<std::vector<uint8_t>> LinuxSession::update() {
 	auto now = std::chrono::steady_clock::now();
-	if ((now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
+	if (stunEnabled && (now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
 		sendHeartbeatToStun<int>(sockFD, stunAddr);
 		lastHeartbeatToStun = now;
 	}
@@ -125,11 +131,11 @@ std::optional<std::vector<uint8_t>> LinuxSession::update() {
 		if (received_str == "PING") {
 			std::string pongMessage = "PONG";
 			sendto(sockFD, pongMessage.c_str(), pongMessage.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
-			peers->push_back(Peer(addr));
+			addPeerIfNew(addr);
 			return std::nullopt;
 		}
 		if (received_str == "PONG") {
-			peers->push_back(Peer(addr));
+			addPeerIfNew(addr);
 			return std::nullopt;
 		}
 
