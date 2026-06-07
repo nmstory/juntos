@@ -117,34 +117,33 @@ Peer LinuxSession::setupPeer(const std::string& destHostname, const int& destPor
 }
 
 std::optional<std::vector<uint8_t>> LinuxSession::update() {
-	auto now = std::chrono::steady_clock::now();
-	if (stunEnabled && (now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
-		sendHeartbeatToStun<int>(sockFD, stunAddr);
-		lastHeartbeatToStun = now;
-	}
+    auto now = std::chrono::steady_clock::now();
+    if (stunEnabled && (now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
+        sendHeartbeatToStun<int>(sockFD, stunAddr);
+        lastHeartbeatToStun = now;
+    }
 
-	auto [success, data, addr] = recvData<int>(sockFD);
+    while (true) {
+        auto [success, data, addr] = recvData<int>(sockFD);
+        if (!success) return std::nullopt;  // socket drained
 
-	if (success) {
-		std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
+        std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
 
-		if (received_str == "PING") {
-			std::string pongMessage = "PONG";
-			sendto(sockFD, pongMessage.c_str(), pongMessage.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
-			addPeerIfNew(addr);
-			return std::nullopt;
-		}
-		if (received_str == "PONG") {
-			addPeerIfNew(addr);
-			return std::nullopt;
-		}
+        if (received_str == "PING") {
+            static constexpr char pong[] = "PONG";
+            sendto(sockFD, pong, sizeof(pong) - 1, 0, (struct sockaddr*)&addr, sizeof(addr));
+            addPeerIfNew(addr);
+            continue;  // don't return, drain next packet
+        }
+        if (received_str == "PONG") {
+            addPeerIfNew(addr);
+            continue;
+        }
 
-		std::vector<uint8_t> appData(data.size());
-		std::memcpy(appData.data(), data.data(), data.size());
-		return appData;
-	}
-
-	return std::nullopt;
+        std::vector<uint8_t> appData(data.size());
+        std::memcpy(appData.data(), data.data(), data.size());
+        return appData;
+    }
 }
 
 bool LinuxSession::send(const uint8_t* data, size_t len) {
