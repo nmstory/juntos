@@ -145,9 +145,9 @@ std::optional<std::vector<uint8_t>> LinuxSession::update() {
     }
 }
 
-bool LinuxSession::send(const uint8_t* data, size_t len) {
+bool LinuxSession::send(std::span<const uint8_t> data) {
 	for (const Peer& peer : peers) {
-		sendto(sockFD, data, len, 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
+		sendto(sockFD, data.data(), data.size(), 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
 	}
 	return true;
 }

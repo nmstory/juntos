@@ -5,6 +5,7 @@
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <session_interface.h>
 
@@ -17,7 +18,7 @@ public:
 	bool init(const std::string& hostname, const int port,
 			std::optional<std::chrono::milliseconds> recvTimeout = std::nullopt);
 	bool addPeer(const std::string& hostname, const int port);
-	bool send(const uint8_t* data, size_t len);
+	bool send(std::span<const uint8_t> data);
 	std::optional<std::vector<uint8_t>> update();
 	Socket getSocketFD() const;
 private:

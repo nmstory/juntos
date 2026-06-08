@@ -58,7 +58,7 @@ public:
 	/*
 		@brief Send bytes to all known peers
 	*/
-	virtual bool send(const uint8_t* data, size_t len) = 0;
+	virtual bool send(std::span<const uint8_t> data) = 0;
 
 	/*
 		@brief Get the socket file descriptor

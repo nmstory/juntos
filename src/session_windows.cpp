@@ -153,9 +153,9 @@ std::optional<std::vector<uint8_t>> WindowsSession::update() {
 	return std::nullopt;
 }
 
-bool WindowsSession::send(const uint8_t* data, size_t len) {
+bool WindowsSession::send(std::span<const uint8_t> data) {
 	for (const Peer& peer : peers) {
-		sendto(socket, reinterpret_cast<const char*>(data), static_cast<int>(len), 0,
+		sendto(socket, reinterpret_cast<const char*>(data.data()), static_cast<int>(data.size()), 0,
 		       (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
 	}
 	return true;

@@ -38,8 +38,8 @@ bool Client::addPeer(const std::string& hostname, const int port) {
 	return true;
 }
 
-bool Client::send(const uint8_t* data, size_t len) {
-    return session->send(data, len);
+bool Client::send(std::span<const uint8_t> data) {
+    return session->send(data);
 }
 
 std::optional<std::vector<uint8_t>> Client::update() {
