@@ -71,16 +71,16 @@ protected:
 		@param addr The peer's send address
 	*/
 	void addPeerIfNew(const sockaddr_in& addr) {
-		for (const Peer& peer : *peers) {
+		for (const Peer& peer : peers) {
 			if (peer.sendAddr.sin_addr.s_addr == addr.sin_addr.s_addr &&
 				peer.sendAddr.sin_port == addr.sin_port) {
 				return;
 			}
 		}
-		peers->push_back(Peer(addr));
+		peers.push_back(Peer(addr));
 	}
 
-	std::vector<Peer>* peers; // TODO: legacy, to be removed
+	std::vector<Peer> peers;
 	std::chrono::time_point<std::chrono::steady_clock> lastHeartbeatToStun; // Time of last heartbeat sent to the STUN server
 	bool stunEnabled = false; // Whether this session was initialised against the STUN server
 	struct sockaddr_in localAddr;

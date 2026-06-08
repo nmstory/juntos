@@ -4,8 +4,6 @@
 #include <cstring>
 
 WindowsSession::WindowsSession() {
-	peers = new std::vector<Peer>();
-
 	int wsaerr;
 	WORD wVersionRequested = MAKEWORD(2, 2);
 	wsaerr = WSAStartup(wVersionRequested, &wsaData);
@@ -87,7 +85,7 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 	}
 
 	// ping each client
-	for (Peer peer : *peers) {
+	for (const Peer& peer : peers) {
 		std::string pingMessage = "PING";
 		int bytesSent = sendto(socket, pingMessage.c_str(), pingMessage.length(), 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
 		if (bytesSent == -1) {
@@ -156,7 +154,7 @@ std::optional<std::vector<uint8_t>> WindowsSession::update() {
 }
 
 bool WindowsSession::send(const uint8_t* data, size_t len) {
-	for (const Peer& peer : *peers) {
+	for (const Peer& peer : peers) {
 		sendto(socket, reinterpret_cast<const char*>(data), static_cast<int>(len), 0,
 		       (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
 	}
