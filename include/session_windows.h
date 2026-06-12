@@ -14,11 +14,11 @@ public:
 	WindowsSession();
 	~WindowsSession();
 
-	bool initSessionToStun(const int& portNumber) override;
-	bool initSessionSolo(const std::string& hostname, const int& portNumber, std::optional<std::chrono::milliseconds> recvTimeout = std::nullopt) override;
-	Peer setupPeer(const std::string& destHostname, const int& destPort) override;
-	bool send(std::span<const uint8_t> data) override;
-	std::optional<std::vector<uint8_t>> update() override;
+	[[nodiscard]] bool initSessionToStun(const int& portNumber) override;
+	[[nodiscard]] bool initSessionSolo(const std::string& hostname, const int& portNumber, std::optional<std::chrono::milliseconds> recvTimeout = std::nullopt) override;
+	[[nodiscard]] Peer setupPeer(const std::string& destHostname, const int& destPort) override;
+	[[nodiscard]] bool send(std::span<const uint8_t> data) override;
+	[[nodiscard]] std::optional<std::vector<uint8_t>> update() override;
 
 	Socket getSocketFD() override {
 		return socket;

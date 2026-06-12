@@ -31,7 +31,7 @@ public:
 		@param recvTimeout Optional receive timeout
 		@return True/False whether client initialisation succeeded or failed
 	*/
-	virtual bool initSessionSolo(const std::string& hostname, const int& portNumber,
+	[[nodiscard]] virtual bool initSessionSolo(const std::string& hostname, const int& portNumber,
 											std::optional<std::chrono::milliseconds> recvTimeout = std::nullopt) = 0;
 
 	/*
@@ -39,7 +39,7 @@ public:
 		@param portNumber The port number to use for the local socket
 		@return True/False whether client initialisation succeeded or failed
 	*/
-	virtual bool initSessionToStun(const int& portNumber) = 0;
+	[[nodiscard]] virtual bool initSessionToStun(const int& portNumber) = 0;
 
 	/*
 		@brief Create a Peer by configuring it's low-level data
@@ -47,24 +47,24 @@ public:
 		@param destPort The port number of the peer to add
 		@return The added peer
 	*/
-	virtual Peer setupPeer(const std::string& destHostname, const int& destPort) = 0;
+	[[nodiscard]] virtual Peer setupPeer(const std::string& destHostname, const int& destPort) = 0;
 
 	/*
 		@brief Update the Session — handle protocol traffic and return any application-level data received
 		@return Received application bytes, or nullopt if nothing (or only protocol messages) arrived
 	*/
-	virtual std::optional<std::vector<uint8_t>> update() = 0;
+	[[nodiscard]] virtual std::optional<std::vector<uint8_t>> update() = 0;
 
 	/*
 		@brief Send bytes to all known peers
 	*/
-	virtual bool send(std::span<const uint8_t> data) = 0;
+	[[nodiscard]] virtual bool send(std::span<const uint8_t> data) = 0;
 
 	/*
 		@brief Get the socket file descriptor
 		@return Socket file descriptor
 	*/
-	virtual Socket getSocketFD() = 0;
+	[[nodiscard]] virtual Socket getSocketFD() = 0;
 protected:
 	/*
 		@brief Add a peer to the peer list, skipping it if an identical address is already known
