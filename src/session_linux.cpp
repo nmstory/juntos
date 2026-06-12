@@ -124,17 +124,17 @@ std::optional<std::vector<uint8_t>> LinuxSession::update() {
 
     while (true) {
         auto [success, data, addr] = recvData<int>(sockFD);
-        if (!success) return std::nullopt;  // socket drained
+        if (!success) [[likely]] return std::nullopt;  // socket drained
 
         std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
 
-        if (received_str == "PING") {
+        if (received_str == "PING") [[unlikely]] {
             static constexpr char pong[] = "PONG";
             sendto(sockFD, pong, sizeof(pong) - 1, 0, (struct sockaddr*)&addr, sizeof(addr));
             addPeerIfNew(addr);
             continue;  // don't return, drain next packet
         }
-        if (received_str == "PONG") {
+        if (received_str == "PONG") [[unlikely]] {
             addPeerIfNew(addr);
             continue;
         }

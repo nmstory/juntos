@@ -131,16 +131,16 @@ std::optional<std::vector<uint8_t>> WindowsSession::update() {
 
 	auto [success, data, addr] = recvData<SOCKET>(socket);
 
-	if (success) {
+	if (success) [[unlikely]] {
 		std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
 
-		if (received_str == "PING") {
+		if (received_str == "PING") [[unlikely]] {
 			static constexpr char pongMessage[] = "PONG";
 			sendto(socket, pongMessage, sizeof(pongMessage) - 1, 0, (struct sockaddr*)&addr, sizeof(addr));
 			addPeerIfNew(addr);
 			return std::nullopt;
 		}
-		if (received_str == "PONG") {
+		if (received_str == "PONG") [[unlikely]] {
 			addPeerIfNew(addr);
 			return std::nullopt;
 		}
