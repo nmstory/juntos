@@ -5,6 +5,7 @@
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <session_interface.h>
 
@@ -13,13 +14,13 @@ public:
 	Client();
 	~Client();
 
-	bool init(const int port);
-	bool init(const std::string& hostname, const int port,
+	[[nodiscard]] bool init(const int port);
+	[[nodiscard]] bool init(const std::string& hostname, const int port,
 			std::optional<std::chrono::milliseconds> recvTimeout = std::nullopt);
-	bool addPeer(const std::string& hostname, const int port);
-	bool send(const uint8_t* data, size_t len);
-	std::optional<std::vector<uint8_t>> update();
-	Socket getSocketFD() const;
+	[[nodiscard]] bool addPeer(const std::string& hostname, const int port);
+	[[nodiscard]] bool send(std::span<const uint8_t> data);
+	[[nodiscard]] std::optional<std::vector<uint8_t>> update();
+	[[nodiscard]] Socket getSocketFD() const;
 private:
 	std::unique_ptr<SessionInterface> session;
 };

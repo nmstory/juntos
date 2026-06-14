@@ -6,7 +6,6 @@
 #include <cstring>
 
 LinuxSession::LinuxSession() {
-	peers = new std::vector<Peer>();
 	lastHeartbeatToStun = std::chrono::steady_clock::now();
 }
 
@@ -32,8 +31,8 @@ bool LinuxSession::initSessionToStun(const int& portNumber) {
 	}
 
 	// Join the server
-	std::string joinMessage = "JOIN";
-	sendto(sockFD, joinMessage.c_str(), joinMessage.length(), 0, (struct sockaddr*) &stunAddr, sizeof(stunAddr));
+	static constexpr char joinMessage[] = "JOIN";
+	sendto(sockFD, joinMessage, sizeof(joinMessage) - 1, 0, (struct sockaddr*) &stunAddr, sizeof(stunAddr));
 	
 	char buffer[4096];
 	socklen_t serverAddrLen = sizeof(stunAddr);
@@ -48,8 +47,8 @@ bool LinuxSession::initSessionToStun(const int& portNumber) {
 	}
 	
 	// Get the list of clients
-	std::string listMessage = "LIST:";
-	sendto(sockFD, listMessage.c_str(), listMessage.length(), 0, (struct sockaddr*)&stunAddr, sizeof(stunAddr));
+	static constexpr char listMessage[] = "LIST:";
+	sendto(sockFD, listMessage, sizeof(listMessage) - 1, 0, (struct sockaddr*)&stunAddr, sizeof(stunAddr));
 	
 	bytesReceived = recvfrom(sockFD, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&stunAddr, &serverAddrLen);
 	if (bytesReceived > 0) {
@@ -77,9 +76,9 @@ bool LinuxSession::initSessionToStun(const int& portNumber) {
 	fcntl(sockFD, F_SETFL, flags | O_NONBLOCK);
 
 	// ping each client
-	for (Peer peer : *peers) {
-		std::string pingMessage = "PING";
-		int bytesSent = sendto(sockFD, pingMessage.c_str(), pingMessage.length(), 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
+	static constexpr char pingMessage[] = "PING";
+	for (const Peer& peer : peers) {
+		int bytesSent = sendto(sockFD, pingMessage, sizeof(pingMessage) - 1, 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
 		if (bytesSent == -1) {
 			std::cerr << "Error sending PING to peer " << peer.sendAddr.sin_addr.s_addr << ":" << ntohs(peer.sendAddr.sin_port) << std::endl;
 		}
@@ -110,46 +109,45 @@ Peer LinuxSession::setupPeer(const std::string& destHostname, const int& destPor
 	addPeerIfNew(peerAddr);
 
 	// Bootstrap the handshake so the remote end discovers us via its update() PING handler
-	std::string pingMessage = "PING";
-	sendto(sockFD, pingMessage.c_str(), pingMessage.length(), 0, (struct sockaddr*)&peerAddr, sizeof(peerAddr));
+	static constexpr char pingMessage[] = "PING";
+	sendto(sockFD, pingMessage, sizeof(pingMessage) - 1, 0, (struct sockaddr*)&peerAddr, sizeof(peerAddr));
 
 	return Peer(peerAddr);
 }
 
 std::optional<std::vector<uint8_t>> LinuxSession::update() {
-	auto now = std::chrono::steady_clock::now();
-	if (stunEnabled && (now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
-		sendHeartbeatToStun<int>(sockFD, stunAddr);
-		lastHeartbeatToStun = now;
-	}
+    auto now = std::chrono::steady_clock::now();
+    if (stunEnabled && (now - lastHeartbeatToStun) > std::chrono::seconds(TIME_BETWEEN_HEARTBEATS)) {
+        sendHeartbeatToStun<int>(sockFD, stunAddr);
+        lastHeartbeatToStun = now;
+    }
 
-	auto [success, data, addr] = recvData<int>(sockFD);
+    while (true) {
+        auto [success, data, addr] = recvData<int>(sockFD);
+        if (!success) [[likely]] return std::nullopt;  // socket drained
 
-	if (success) {
-		std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
+        std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
 
-		if (received_str == "PING") {
-			std::string pongMessage = "PONG";
-			sendto(sockFD, pongMessage.c_str(), pongMessage.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
-			addPeerIfNew(addr);
-			return std::nullopt;
-		}
-		if (received_str == "PONG") {
-			addPeerIfNew(addr);
-			return std::nullopt;
-		}
+        if (received_str == "PING") [[unlikely]] {
+            static constexpr char pong[] = "PONG";
+            sendto(sockFD, pong, sizeof(pong) - 1, 0, (struct sockaddr*)&addr, sizeof(addr));
+            addPeerIfNew(addr);
+            continue;  // don't return, drain next packet
+        }
+        if (received_str == "PONG") [[unlikely]] {
+            addPeerIfNew(addr);
+            continue;
+        }
 
-		std::vector<uint8_t> appData(data.size());
-		std::memcpy(appData.data(), data.data(), data.size());
-		return appData;
-	}
-
-	return std::nullopt;
+        std::vector<uint8_t> appData(data.size());
+        std::memcpy(appData.data(), data.data(), data.size());
+        return appData;
+    }
 }
 
-bool LinuxSession::send(const uint8_t* data, size_t len) {
-	for (const Peer& peer : *peers) {
-		sendto(sockFD, data, len, 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
+bool LinuxSession::send(std::span<const uint8_t> data) {
+	for (const Peer& peer : peers) {
+		sendto(sockFD, data.data(), data.size(), 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
 	}
 	return true;
 }

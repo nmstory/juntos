@@ -139,6 +139,6 @@ std::tuple<bool, std::vector<std::byte>, sockaddr_in> recvData(T recvSockFD) {
 */
 template <typename T>
 void sendHeartbeatToStun(const T& sockfd, const sockaddr_in& serverAddr) {
-	std::string message = "HEARTBEAT:";
-	sendto(sockfd, message.c_str(), message.length(), 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+	static constexpr char message[] = "HEARTBEAT:";
+	sendto(sockfd, message, sizeof(message) - 1, 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
 }

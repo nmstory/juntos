@@ -4,8 +4,6 @@
 #include <cstring>
 
 WindowsSession::WindowsSession() {
-	peers = new std::vector<Peer>();
-
 	int wsaerr;
 	WORD wVersionRequested = MAKEWORD(2, 2);
 	wsaerr = WSAStartup(wVersionRequested, &wsaData);
@@ -36,8 +34,8 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 	}
 
 	// Join the server
-	std::string joinMessage = "JOIN";
-	sendto(socket, joinMessage.c_str(), joinMessage.length(), 0, (struct sockaddr*) &stunAddr, sizeof(stunAddr));
+	static constexpr char joinMessage[] = "JOIN";
+	sendto(socket, joinMessage, sizeof(joinMessage) - 1, 0, (struct sockaddr*) &stunAddr, sizeof(stunAddr));
 	
 	char buffer[4096];
 	socklen_t serverAddrLen = sizeof(stunAddr);
@@ -54,8 +52,8 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 	}
 
 	// Get the list of clients
-	std::string listMessage = "LIST:";
-	sendto(socket, listMessage.c_str(), listMessage.length(), 0, (struct sockaddr*)&stunAddr, sizeof(stunAddr));
+	static constexpr char listMessage[] = "LIST:";
+	sendto(socket, listMessage, sizeof(listMessage) - 1, 0, (struct sockaddr*)&stunAddr, sizeof(stunAddr));
 	
 	bytesReceived = recvfrom(socket, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&stunAddr, &serverAddrLen);
 	if (bytesReceived > 0) {
@@ -87,9 +85,9 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 	}
 
 	// ping each client
-	for (Peer peer : *peers) {
-		std::string pingMessage = "PING";
-		int bytesSent = sendto(socket, pingMessage.c_str(), pingMessage.length(), 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
+	static constexpr char pingMessage[] = "PING";
+	for (const Peer& peer : peers) {
+		int bytesSent = sendto(socket, pingMessage, sizeof(pingMessage) - 1, 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
 		if (bytesSent == -1) {
 			std::cerr << "Error sending PING to peer " << peer.sendAddr.sin_addr.s_addr << ":" << ntohs(peer.sendAddr.sin_port) << std::endl;
 		}
@@ -118,8 +116,8 @@ Peer WindowsSession::setupPeer(const std::string& destHostname, const int& destP
 	addPeerIfNew(peerAddr);
 
 	// Bootstrap the handshake so the remote end discovers us via its update() PING handler
-	std::string pingMessage = "PING";
-	sendto(socket, pingMessage.c_str(), pingMessage.length(), 0, (struct sockaddr*)&peerAddr, sizeof(peerAddr));
+	static constexpr char pingMessage[] = "PING";
+	sendto(socket, pingMessage, sizeof(pingMessage) - 1, 0, (struct sockaddr*)&peerAddr, sizeof(peerAddr));
 
 	return Peer(peerAddr);
 }
@@ -133,16 +131,16 @@ std::optional<std::vector<uint8_t>> WindowsSession::update() {
 
 	auto [success, data, addr] = recvData<SOCKET>(socket);
 
-	if (success) {
+	if (success) [[unlikely]] {
 		std::string_view received_str(reinterpret_cast<const char*>(data.data()), data.size());
 
-		if (received_str == "PING") {
-			std::string pongMessage = "PONG";
-			sendto(socket, pongMessage.c_str(), pongMessage.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
+		if (received_str == "PING") [[unlikely]] {
+			static constexpr char pongMessage[] = "PONG";
+			sendto(socket, pongMessage, sizeof(pongMessage) - 1, 0, (struct sockaddr*)&addr, sizeof(addr));
 			addPeerIfNew(addr);
 			return std::nullopt;
 		}
-		if (received_str == "PONG") {
+		if (received_str == "PONG") [[unlikely]] {
 			addPeerIfNew(addr);
 			return std::nullopt;
 		}
@@ -155,9 +153,9 @@ std::optional<std::vector<uint8_t>> WindowsSession::update() {
 	return std::nullopt;
 }
 
-bool WindowsSession::send(const uint8_t* data, size_t len) {
-	for (const Peer& peer : *peers) {
-		sendto(socket, reinterpret_cast<const char*>(data), static_cast<int>(len), 0,
+bool WindowsSession::send(std::span<const uint8_t> data) {
+	for (const Peer& peer : peers) {
+		sendto(socket, reinterpret_cast<const char*>(data.data()), static_cast<int>(data.size()), 0,
 		       (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
 	}
 	return true;
