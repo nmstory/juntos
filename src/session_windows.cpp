@@ -19,8 +19,7 @@ WindowsSession::~WindowsSession() {
 
 bool WindowsSession::initSessionToStun(const int& portNumber) {
 	stunEnabled = true;
-	char ip[20];
-	strcpy(ip, "127.0.0.1");
+	char ip[] = "127.0.0.1";
 
 	localAddr = populateAddress(ip, portNumber);
 	socket = createSocket<SOCKET>(localAddr);
@@ -30,16 +29,16 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 	if (inet_pton(AF_INET, STUN_SERVER_IP, &stunAddr.sin_addr) <= 0) {
 		std::cerr << "Invalid server IP address" << std::endl;
 		closesocket(socket);
-		return -1;
+		return false;
 	}
 
 	// Join the server
 	static constexpr char joinMessage[] = "JOIN";
-	sendto(socket, joinMessage, sizeof(joinMessage) - 1, 0, (struct sockaddr*) &stunAddr, sizeof(stunAddr));
+	sendto(socket, joinMessage, static_cast<int>(sizeof(joinMessage) - 1), 0, (struct sockaddr*) &stunAddr, static_cast<int>(sizeof(stunAddr)));
 	
 	char buffer[4096];
 	socklen_t serverAddrLen = sizeof(stunAddr);
-	int bytesReceived = recvfrom(socket, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*) &stunAddr, &serverAddrLen);
+	int bytesReceived = recvfrom(socket, buffer, static_cast<int>(sizeof(buffer) - 1), 0, (struct sockaddr*) &stunAddr, &serverAddrLen);
 
 	if (bytesReceived > 0) {
 		buffer[bytesReceived] = '\0';
@@ -53,9 +52,9 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 
 	// Get the list of clients
 	static constexpr char listMessage[] = "LIST:";
-	sendto(socket, listMessage, sizeof(listMessage) - 1, 0, (struct sockaddr*)&stunAddr, sizeof(stunAddr));
+	sendto(socket, listMessage, static_cast<int>(sizeof(listMessage) - 1), 0, (struct sockaddr*)&stunAddr, static_cast<int>(sizeof(stunAddr)));
 	
-	bytesReceived = recvfrom(socket, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&stunAddr, &serverAddrLen);
+	bytesReceived = recvfrom(socket, buffer, static_cast<int>(sizeof(buffer) - 1), 0, (struct sockaddr*)&stunAddr, &serverAddrLen);
 	if (bytesReceived > 0) {
 		if (bytesReceived == 5) {
 			std::puts("Currently waiting for other clients to connect! Hang on :)");
@@ -65,13 +64,14 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 			buffer[bytesReceived] = '\0';
 			
 			char* ip;
-			char* splitterIndex = strtok(buffer, ":;");
+			char* ctx = nullptr;
+			char* splitterIndex = strtok_s(buffer, ":;", &ctx);
 
 			while (splitterIndex != NULL) {
 				ip = splitterIndex;
-				splitterIndex = strtok(NULL, ":;");
+				splitterIndex = strtok_s(NULL, ":;", &ctx);
 				addPeerIfNew(populateAddress(ip, atoi(splitterIndex)));
-				splitterIndex = strtok(NULL, ":;");
+				splitterIndex = strtok_s(NULL, ":;", &ctx);
 			}
 		}
 	}
@@ -87,7 +87,7 @@ bool WindowsSession::initSessionToStun(const int& portNumber) {
 	// ping each client
 	static constexpr char pingMessage[] = "PING";
 	for (const Peer& peer : peers) {
-		int bytesSent = sendto(socket, pingMessage, sizeof(pingMessage) - 1, 0, (struct sockaddr*)&peer.sendAddr, sizeof(peer.sendAddr));
+		int bytesSent = sendto(socket, pingMessage, static_cast<int>(sizeof(pingMessage) - 1), 0, (struct sockaddr*)&peer.sendAddr, static_cast<int>(sizeof(peer.sendAddr)));
 		if (bytesSent == -1) {
 			std::cerr << "Error sending PING to peer " << peer.sendAddr.sin_addr.s_addr << ":" << ntohs(peer.sendAddr.sin_port) << std::endl;
 		}
@@ -117,7 +117,7 @@ Peer WindowsSession::setupPeer(const std::string& destHostname, const int& destP
 
 	// Bootstrap the handshake so the remote end discovers us via its update() PING handler
 	static constexpr char pingMessage[] = "PING";
-	sendto(socket, pingMessage, sizeof(pingMessage) - 1, 0, (struct sockaddr*)&peerAddr, sizeof(peerAddr));
+	sendto(socket, pingMessage, static_cast<int>(sizeof(pingMessage) - 1), 0, (struct sockaddr*)&peerAddr, static_cast<int>(sizeof(peerAddr)));
 
 	return Peer(peerAddr);
 }
@@ -136,7 +136,7 @@ std::optional<std::vector<uint8_t>> WindowsSession::update() {
 
 		if (received_str == "PING") [[unlikely]] {
 			static constexpr char pongMessage[] = "PONG";
-			sendto(socket, pongMessage, sizeof(pongMessage) - 1, 0, (struct sockaddr*)&addr, sizeof(addr));
+			sendto(socket, pongMessage, static_cast<int>(sizeof(pongMessage) - 1), 0, (struct sockaddr*)&addr, static_cast<int>(sizeof(addr)));
 			addPeerIfNew(addr);
 			return std::nullopt;
 		}

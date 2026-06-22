@@ -1,4 +1,6 @@
+#ifndef _WIN32
 #include <netdb.h>
+#endif
 #include <network_handler.h>
 
 sockaddr_in populateAddress(const char* host, const int& port) {
