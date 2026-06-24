@@ -29,6 +29,27 @@ jobs:
       with:
         fixesFile: clang-fixes.yaml
 
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: setup
+      run: |
+        sudo apt-get update
+        sudo apt install cmake clang
+    - name: build with ASan + UBSan
+      run: |
+        rm -Rf build/
+        mkdir build/
+        cd build/
+        cmake -DCMAKE_CXX_COMPILER=clang++ -DJUNTOS_BUILD_TESTS=ON -DJUNTOS_SANITIZERS=ON ..
+        make
+    - name: run tests
+      run: cd build && ctest --output-on-failure
+      env:
+        ASAN_OPTIONS: halt_on_error=1:detect_leaks=1
+        UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+
   clang-format-checking:
     runs-on: ubuntu-latest
     steps:

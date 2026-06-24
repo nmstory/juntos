@@ -42,3 +42,17 @@ option(JUNTOS_BUILD_EXAMPLES "Build example applications" OFF)
 if(JUNTOS_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
+
+# Tests CMake option
+option(JUNTOS_BUILD_TESTS "Build tests" OFF)
+if(JUNTOS_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(test)
+endif()
+
+# Sanitizers CMake option (ASan + UBSan, requires clang or gcc >= 4.8)
+option(JUNTOS_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+if(JUNTOS_SANITIZERS)
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer -g)
+    add_link_options(-fsanitize=address,undefined)
+endif()
