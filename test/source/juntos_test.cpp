@@ -1,8 +1,18 @@
-#include "lib.hpp"
+#include <gtest/gtest.h>
+#include <client.h>
 
-auto main() -> int
-{
-  auto const lib = library {};
+TEST(ClientTest, DefaultConstruct) {
+    Client client;
+}
 
-  return lib.name == "juntos" ? 0 : 1;
+TEST(ClientTest, InitAsServer) {
+    Client client;
+    // Port 0 lets the OS assign an available port
+    EXPECT_TRUE(client.init(0));
+}
+
+TEST(ClientTest, InitAsServerSocketValid) {
+    Client client;
+    ASSERT_TRUE(client.init(0));
+    EXPECT_GE(client.getSocketFD(), 0);
 }

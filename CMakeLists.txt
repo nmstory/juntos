@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 
 include(cmake/prelude.cmake)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 project(
     juntos
     VERSION 0.1.0
