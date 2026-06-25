@@ -6,16 +6,16 @@ TEST(ClientTest, DefaultConstruct)
   Client client;
 }
 
-TEST(ClientTest, InitAsServer)
+TEST(ClientTest, InitLocal)
 {
   Client client;
-  // Port 0 lets the OS assign an available port
-  EXPECT_TRUE(client.init(0));
+  // initSessionSolo: just binds a UDP socket, no STUN/network calls
+  EXPECT_TRUE(client.init("127.0.0.1", 0));
 }
 
-TEST(ClientTest, InitAsServerSocketValid)
+TEST(ClientTest, InitLocalSocketValid)
 {
   Client client;
-  ASSERT_TRUE(client.init(0));
+  ASSERT_TRUE(client.init("127.0.0.1", 0));
   EXPECT_GE(client.getSocketFD(), 0);
 }
