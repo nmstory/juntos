@@ -54,9 +54,14 @@ public:
   /*
           @brief Initialise session functionality by contacting the STUN server
           @param portNumber The port number to use for the local socket
+          @param stunHost The STUN server hostname/IP to contact
+          @param stunPort The STUN server port
           @return True/False whether client initialisation succeeded or failed
   */
-  [[nodiscard]] virtual bool initSessionToStun(const int& portNumber) = 0;
+  [[nodiscard]] virtual bool initSessionToStun(
+      const int& portNumber,
+      const std::string& stunHost = DEFAULT_STUN_HOST,
+      const int& stunPort = DEFAULT_STUN_PORT) = 0;
 
   /*
           @brief Create a Peer by configuring it's low-level data

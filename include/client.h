@@ -15,7 +15,9 @@ public:
   Client();
   ~Client();
 
-  [[nodiscard]] bool init(const int port);
+  [[nodiscard]] bool init(const int port,
+                          const std::string& stunHost = DEFAULT_STUN_HOST,
+                          const int stunPort = DEFAULT_STUN_PORT);
   [[nodiscard]] bool init(
       const std::string& hostname,
       const int port,

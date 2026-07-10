@@ -16,22 +16,22 @@ LinuxSession::~LinuxSession()
   close(sockFD);
 }
 
-bool LinuxSession::initSessionToStun(const int& portNumber)
+bool LinuxSession::initSessionToStun(const int& portNumber,
+                                     const std::string& stunHost,
+                                     const int& stunPort)
 {
   // TODO: if already initialised, inform and back out
   stunEnabled = true;
-  char ip[20];
-  strcpy(ip, "127.0.0.1");
 
-  localAddr = populateAddress(ip, portNumber);
+  localAddr = populateAddress("127.0.0.1", portNumber);
   sockFD = createSocket<int>(localAddr);
 
-  stunAddr.sin_family = AF_INET;
-  stunAddr.sin_port = htons(STUN_SERVER_PORT);
-  if (inet_pton(AF_INET, STUN_SERVER_IP, &stunAddr.sin_addr) <= 0) {
-    std::cerr << "Invalid server IP address" << std::endl;
+  stunAddr = populateAddress(stunHost.c_str(), stunPort);
+  if (stunAddr.sin_family != AF_INET) {
+    std::cerr << "Invalid STUN server address: " << stunHost << ":" << stunPort
+              << std::endl;
     close(sockFD);
-    return -1;
+    return false;
   }
 
   // Join the server

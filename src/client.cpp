@@ -19,10 +19,12 @@ extern std::unique_ptr<SessionInterface> CreateSession()
 #endif
 }
 
-bool Client::init(const int port)
+bool Client::init(const int port,
+                  const std::string& stunHost,
+                  const int stunPort)
 {
   session = CreateSession();
-  return session->initSessionToStun(port);
+  return session->initSessionToStun(port, stunHost, stunPort);
 }
 
 bool Client::init(const std::string& hostname,

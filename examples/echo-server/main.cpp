@@ -11,12 +11,17 @@ int main(int argc, char *argv[]) {
 	}
 
 	Client client;
-	client.init(std::stoi(argv[1]));
+
+	int port = std::stoi(argv[1]);
+	std::string stunHost = (argc > 2) ? argv[2] : DEFAULT_STUN_HOST;
+	int stunPort = (argc > 3) ? std::stoi(argv[3]) : DEFAULT_STUN_PORT;
+
+	client.init(port, stunHost, stunPort);
 
 	// echo
 	while (true) {
 		if (auto bytes = client.update()) {
-			client.send(bytes->data(), bytes->size());
+			client.send(*bytes);
 		}
 	}
 
