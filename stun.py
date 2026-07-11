@@ -2,7 +2,11 @@
 # Custom STUN server to manage the initial communication between peers
 from concurrent.futures import ThreadPoolExecutor
 import socket
+import sys
 import time
+
+# Flush prints line-by-line even when stdout is piped/redirected (e.g. over SSH)
+sys.stdout.reconfigure(line_buffering=True)
 
 guests = {} # The "guest book" (dictionary)
 TIMEOUT = 30 # Time until forgetting a client (seconds)
