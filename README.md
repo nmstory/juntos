@@ -17,6 +17,14 @@ Feel free to add my repo as a submodule! If you're looking for an example, my di
 
 ## Building Juntos as a Standalone Project with Examples
 
+The included [`chat`](examples/chat/main.cpp) example is a minimal peer-to-peer chat that exercises the full Juntos flow end to end:
+
+1. Each peer registers with the STUN server (`stun.py`) and asks for the current guest list.
+2. Peers discover one another and UDP hole-punch a direct connection — once that's done, no traffic flows through the server.
+3. Anything you type is sent straight to every connected peer, and incoming messages are printed as `Peer: <message>`.
+
+When a peer connects you'll see `Peer discovered: <ip>:<port>` on the client and a `Client joined` line on the STUN server. The steps below build the example and run two peers so you can chat between them.
+
 ### Linux
 Here's the simple steps, from the root directory of the project:
 
@@ -41,6 +49,8 @@ them — type a message in one and it appears in the other:
 ```sh
 ./examples/chat/juntos_chat {ANOTHER_PORT_NUMBER}
 ```
+
+To go beyond localhost, host `stun.py` somewhere reachable, pass its address as `STUN_HOST`/`STUN_PORT`, and make sure that port is open for **UDP** — as cloud firewalls can default to TCP.
 
 ### Windows
 I'm currently using Microsoft's Visual Studio 2022, which has support to compile and launch CMake projects.
