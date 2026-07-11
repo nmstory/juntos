@@ -91,6 +91,21 @@ public:
   */
   [[nodiscard]] virtual Socket getSocketFD() = 0;
 
+  /*
+          @brief Human-readable "ip:port" for each currently known peer
+          @return One string per peer, in discovery order
+  */
+  [[nodiscard]] std::vector<std::string> peerAddresses() const
+  {
+    std::vector<std::string> out;
+    out.reserve(peers.size());
+    for (const Peer& peer : peers) {
+      out.emplace_back(std::string(inet_ntoa(peer.sendAddr.sin_addr)) + ":"
+                       + std::to_string(ntohs(peer.sendAddr.sin_port)));
+    }
+    return out;
+  }
+
 protected:
   /*
           @brief Add a peer to the peer list, skipping it if an identical

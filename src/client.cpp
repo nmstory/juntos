@@ -51,6 +51,11 @@ std::optional<std::vector<uint8_t>> Client::update()
   return session->update();
 }
 
+std::vector<std::string> Client::peerAddresses() const
+{
+  return session ? session->peerAddresses() : std::vector<std::string> {};
+}
+
 Socket Client::getSocketFD() const
 {
   return session->getSocketFD();

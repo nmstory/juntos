@@ -26,7 +26,7 @@ bool WindowsSession::initSessionToStun(const int& portNumber,
 {
   stunEnabled = true;
 
-  localAddr = populateAddress("127.0.0.1", portNumber);
+  localAddr = populateAddress("0.0.0.0", portNumber);
   socket = createSocket<SOCKET>(localAddr);
 
   stunAddr = populateAddress(stunHost.c_str(), stunPort);
@@ -81,10 +81,17 @@ bool WindowsSession::initSessionToStun(const int& portNumber,
                            0,
                            (struct sockaddr*)&stunAddr,
                            &serverAddrLen);
+  u_long mode = 1;  // Non-blocking mode
+  if (ioctlsocket(socket, FIONBIO, &mode) != 0) {
+    std::cerr << "Failed to set socket to non-blocking mode." << std::endl;
+    WSACleanup();
+    return false;
+  }
+
   if (bytesReceived > 0) {
     if (bytesReceived == 5) {
       std::puts("Currently waiting for other clients to connect! Hang on :)");
-      return 0;
+      return true;
     } else {
       buffer[bytesReceived] = '\0';
 
@@ -99,14 +106,6 @@ bool WindowsSession::initSessionToStun(const int& portNumber,
         splitterIndex = strtok_s(NULL, ":;", &ctx);
       }
     }
-  }
-
-  // Set socket to non-blocking
-  u_long mode = 1;  // Non-blocking mode
-  if (ioctlsocket(socket, FIONBIO, &mode) != 0) {
-    std::cerr << "Failed to set socket to non-blocking mode." << std::endl;
-    WSACleanup();
-    return 1;
   }
 
   // ping each client

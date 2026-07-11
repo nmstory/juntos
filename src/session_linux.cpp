@@ -23,7 +23,7 @@ bool LinuxSession::initSessionToStun(const int& portNumber,
   // TODO: if already initialised, inform and back out
   stunEnabled = true;
 
-  localAddr = populateAddress("127.0.0.1", portNumber);
+  localAddr = populateAddress("0.0.0.0", portNumber);
   sockFD = createSocket<int>(localAddr);
 
   stunAddr = populateAddress(stunHost.c_str(), stunPort);
@@ -74,11 +74,16 @@ bool LinuxSession::initSessionToStun(const int& portNumber,
                            0,
                            (struct sockaddr*)&stunAddr,
                            &serverAddrLen);
+                           
+  // Set socket to non-blocking now the blocking JOIN/LIST handshake is done.
+  int flags = fcntl(sockFD, F_GETFL, 0);
+  fcntl(sockFD, F_SETFL, flags | O_NONBLOCK);
+
   if (bytesReceived > 0) {
     buffer[bytesReceived] = '\0';
     if (bytesReceived == 5) {
       std::puts("Currently waiting for other clients to connect! Hang on :)");
-      return 0;
+      return true;
     } else {
       char* ip;
       char* splitterIndex = strtok(buffer, ":;");
@@ -94,10 +99,6 @@ bool LinuxSession::initSessionToStun(const int& portNumber,
       }
     }
   }
-
-  // Set socket to non-blocking mode
-  int flags = fcntl(sockFD, F_GETFL, 0);
-  fcntl(sockFD, F_SETFL, flags | O_NONBLOCK);
 
   // ping each client
   static constexpr char pingMessage[] = "PING";

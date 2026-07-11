@@ -25,6 +25,7 @@ public:
   [[nodiscard]] bool addPeer(const std::string& hostname, const int port);
   [[nodiscard]] bool send(std::span<const uint8_t> data);
   [[nodiscard]] std::optional<std::vector<uint8_t>> update();
+  [[nodiscard]] std::vector<std::string> peerAddresses() const;
   [[nodiscard]] Socket getSocketFD() const;
 
 private:
