@@ -15,7 +15,9 @@ public:
   Client();
   ~Client();
 
-  [[nodiscard]] bool init(const int port);
+  [[nodiscard]] bool init(const int port,
+                          const std::string& stunHost = DEFAULT_STUN_HOST,
+                          const int stunPort = DEFAULT_STUN_PORT);
   [[nodiscard]] bool init(
       const std::string& hostname,
       const int port,
@@ -23,6 +25,7 @@ public:
   [[nodiscard]] bool addPeer(const std::string& hostname, const int port);
   [[nodiscard]] bool send(std::span<const uint8_t> data);
   [[nodiscard]] std::optional<std::vector<uint8_t>> update();
+  [[nodiscard]] std::vector<std::string> peerAddresses() const;
   [[nodiscard]] Socket getSocketFD() const;
 
 private:

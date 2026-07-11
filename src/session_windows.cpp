@@ -20,18 +20,19 @@ WindowsSession::~WindowsSession()
   WSACleanup();
 }
 
-bool WindowsSession::initSessionToStun(const int& portNumber)
+bool WindowsSession::initSessionToStun(const int& portNumber,
+                                       const std::string& stunHost,
+                                       const int& stunPort)
 {
   stunEnabled = true;
-  char ip[] = "127.0.0.1";
 
-  localAddr = populateAddress(ip, portNumber);
+  localAddr = populateAddress("0.0.0.0", portNumber);
   socket = createSocket<SOCKET>(localAddr);
 
-  stunAddr.sin_family = AF_INET;
-  stunAddr.sin_port = htons(STUN_SERVER_PORT);
-  if (inet_pton(AF_INET, STUN_SERVER_IP, &stunAddr.sin_addr) <= 0) {
-    std::cerr << "Invalid server IP address" << std::endl;
+  stunAddr = populateAddress(stunHost.c_str(), stunPort);
+  if (stunAddr.sin_family != AF_INET) {
+    std::cerr << "Invalid STUN server address: " << stunHost << ":" << stunPort
+              << std::endl;
     closesocket(socket);
     return false;
   }
@@ -80,10 +81,17 @@ bool WindowsSession::initSessionToStun(const int& portNumber)
                            0,
                            (struct sockaddr*)&stunAddr,
                            &serverAddrLen);
+  u_long mode = 1;  // Non-blocking mode
+  if (ioctlsocket(socket, FIONBIO, &mode) != 0) {
+    std::cerr << "Failed to set socket to non-blocking mode." << std::endl;
+    WSACleanup();
+    return false;
+  }
+
   if (bytesReceived > 0) {
     if (bytesReceived == 5) {
       std::puts("Currently waiting for other clients to connect! Hang on :)");
-      return 0;
+      return true;
     } else {
       buffer[bytesReceived] = '\0';
 
@@ -98,14 +106,6 @@ bool WindowsSession::initSessionToStun(const int& portNumber)
         splitterIndex = strtok_s(NULL, ":;", &ctx);
       }
     }
-  }
-
-  // Set socket to non-blocking
-  u_long mode = 1;  // Non-blocking mode
-  if (ioctlsocket(socket, FIONBIO, &mode) != 0) {
-    std::cerr << "Failed to set socket to non-blocking mode." << std::endl;
-    WSACleanup();
-    return 1;
   }
 
   // ping each client

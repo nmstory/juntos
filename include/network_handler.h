@@ -13,6 +13,10 @@
 
 const short TIME_BETWEEN_HEARTBEATS = 5;  // seconds
 
+// Default STUN server endpoint, used when none is supplied at init
+const char DEFAULT_STUN_HOST[] = "127.0.0.1";
+const int DEFAULT_STUN_PORT = 12345;
+
 /*
         @brief Populate a socket address with an IP address and port
         @param ip: IP address to populate the socket address with
