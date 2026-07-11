@@ -1,1 +1,1 @@
-add_subdirectory(echo-server)
+add_subdirectory(chat)

@@ -29,10 +29,17 @@ Then build:
 cmake -D JUNTOS_BUILD_EXAMPLES=ON .. && make
 ```
 
-Finally, run:
+Finally, run the STUN server and then a chat peer (optionally pass the STUN
+host and port; they default to `127.0.0.1:12345`):
 ```sh
 python3 ../stun.py &
-./examples/echo-server/juntos_echo {DESIRED_PORT_NUMBER}
+./examples/chat/juntos_chat {DESIRED_PORT_NUMBER} [STUN_HOST] [STUN_PORT]
+```
+
+Start a second peer in another terminal (on a different port) to chat between
+them — type a message in one and it appears in the other:
+```sh
+./examples/chat/juntos_chat {ANOTHER_PORT_NUMBER}
 ```
 
 ### Windows
