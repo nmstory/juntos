@@ -1,7 +1,6 @@
 
 # Custom STUN server to manage the initial communication between peers
-from concurrent.futures import ThreadPoolExecutor
-import socket
+import asyncio
 import sys
 import time
 
@@ -13,53 +12,59 @@ TIMEOUT = 30 # Time until forgetting a client (seconds)
 SERVER_IP = "0.0.0.0"
 SERVER_PORT = 12345
 
-def handle_client(data, client_address, server_socket):
-    message = data.decode()
-    parts = message.split(":")
+class StunProtocol(asyncio.DatagramProtocol):
+    def connection_made(self, transport):
+        self.transport = transport
 
-    if parts[0] == "HEARTBEAT":
-        # A client is letting us know they are still online.
-        if client_address in guests:
-            guests[client_address]["last_seen"] = time.time()
-        return
+    def datagram_received(self, data, client_address):
+        message = data.decode()
+        parts = message.split(":")
 
-    elif parts[0] == "JOIN":
-        guests[client_address] = {"last_seen": time.time()}
-        print(f"Client joined: {client_address}")
-        response = "JOIN_OK".encode()
+        if parts[0] == "HEARTBEAT":
+            # A client is letting us know they are still online.
+            if client_address in guests:
+                guests[client_address]["last_seen"] = time.time()
+            return
 
-    elif parts[0] == "LIST":
-        if len(guests) == 1:
-            response = "EMPTY".encode()
-        else:
-            formatted_guestlist = ""
-            now = time.time()
-            dead_clients = []
+        elif parts[0] == "JOIN":
+            guests[client_address] = {"last_seen": time.time()}
+            print(f"Client joined: {client_address}")
+            response = "JOIN_OK".encode()
 
-            for address, guest_info in guests.items():
-                if now - guest_info["last_seen"] > TIMEOUT:
-                    dead_clients.append(address)
-                else:
-                    if address != client_address: # Don't send the client their own address
-                        formatted_guestlist += f"{address[0]}:{address[1]};"
-            for address in dead_clients: # Remove dead peers
-                del guests[address]
-                print(f"Client timed out: {address}")
+        elif parts[0] == "LIST":
+            if len(guests) == 1:
+                response = "EMPTY".encode()
+            else:
+                formatted_guestlist = ""
+                now = time.time()
+                dead_clients = []
 
-            response = formatted_guestlist.encode()
+                for address, guest_info in guests.items():
+                    if now - guest_info["last_seen"] > TIMEOUT:
+                        dead_clients.append(address)
+                    else:
+                        if address != client_address: # Don't send the client their own address
+                            formatted_guestlist += f"{address[0]}:{address[1]};"
+                for address in dead_clients: # Remove dead peers
+                    del guests[address]
+                    print(f"Client timed out: {address}")
 
-    server_socket.sendto(response, client_address)
-    
-def main():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_address = (SERVER_IP, SERVER_PORT)
-    server_socket.bind(server_address)
+                response = formatted_guestlist.encode()
+
+        self.transport.sendto(response, client_address)
+
+async def main():
+    loop = asyncio.get_running_loop()
+    transport, _ = await loop.create_datagram_endpoint(
+        StunProtocol,
+        local_addr=(SERVER_IP, SERVER_PORT),
+    )
     print("Server started, listening on port " + str(SERVER_PORT))
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        while True:
-            data, client_address = server_socket.recvfrom(4096)
-            executor.submit(handle_client, data, client_address, server_socket)
+    try:
+        await asyncio.Future() # run forever
+    finally:
+        transport.close()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
