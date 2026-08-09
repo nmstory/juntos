@@ -63,12 +63,13 @@ For anything beyond a quick local test, run `stun.py` under systemd instead of a
 
 1. Copy the project (or at least `stun.py`) to the server, e.g. `/opt/juntos/`.
 2. Copy [`deploy/systemd/juntos-stun.service`](deploy/systemd/juntos-stun.service) to `/etc/systemd/system/juntos-stun.service`, adjusting `ExecStart` if you didn't use `/opt/juntos`.
-3. Enable and start it:
+3. To change the host/port from the defaults (`0.0.0.0:12345`), copy [`deploy/systemd/juntos-stun.env.example`](deploy/systemd/juntos-stun.env.example) to `/etc/juntos-stun.env`, uncomment `STUN_HOST`/`STUN_PORT`, and edit them — the unit's `EnvironmentFile` picks this up automatically (its `-` prefix means the service still starts fine if the file is absent).
+4. Enable and start it:
    ```sh
    sudo systemctl daemon-reload
    sudo systemctl enable --now juntos-stun
    ```
-4. Watch it run: `journalctl -u juntos-stun -f`.
+5. Watch it run: `journalctl -u juntos-stun -f`.
 
 As before, make sure UDP port 12345 (or whichever port you configure) is open in your firewall — there's no reverse proxy in front of it, since nothing but the peers themselves talk to this socket.
 
