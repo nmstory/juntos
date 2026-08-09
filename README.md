@@ -57,6 +57,21 @@ I'm currently using Microsoft's Visual Studio 2022, which has support to compile
 
 [See here](https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-170) for a tutorial on how to configure this!
 
+## Deploying the STUN server
+
+For anything beyond a quick local test, run `stun.py` under systemd instead of a screen/`&` session — you get restart-on-crash, start-on-boot, and logs via `journalctl` for free.
+
+1. Copy the project (or at least `stun.py`) to the server, e.g. `/opt/juntos/`.
+2. Copy [`deploy/systemd/juntos-stun.service`](deploy/systemd/juntos-stun.service) to `/etc/systemd/system/juntos-stun.service`, adjusting `ExecStart` if you didn't use `/opt/juntos`.
+3. Enable and start it:
+   ```sh
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now juntos-stun
+   ```
+4. Watch it run: `journalctl -u juntos-stun -f`.
+
+As before, make sure UDP port 12345 (or whichever port you configure) is open in your firewall — there's no reverse proxy in front of it, since nothing but the peers themselves talk to this socket.
+
 ## Credits
 
 Crediting projects utilised for inspiration/support
