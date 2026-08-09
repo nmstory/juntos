@@ -1,6 +1,7 @@
 
 # Custom STUN server to manage the initial communication between peers
 import asyncio
+import os
 import sys
 import time
 
@@ -9,8 +10,8 @@ sys.stdout.reconfigure(line_buffering=True)
 
 guests = {} # The "guest book" (dictionary)
 TIMEOUT = 30 # Time until forgetting a client (seconds)
-SERVER_IP = "0.0.0.0"
-SERVER_PORT = 12345
+SERVER_IP = os.environ.get("STUN_HOST", "0.0.0.0")
+SERVER_PORT = int(os.environ.get("STUN_PORT", "12345"))
 
 class StunProtocol(asyncio.DatagramProtocol):
     def connection_made(self, transport):

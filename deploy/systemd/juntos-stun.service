@@ -1,0 +1,19 @@
+[Unit]
+Description=Juntos STUN server
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/juntos-stun.env
+ExecStart=/usr/bin/python3 /opt/juntos/stun.py
+Restart=on-failure
+RestartSec=2
+
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
