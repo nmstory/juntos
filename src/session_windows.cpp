@@ -204,6 +204,27 @@ std::optional<std::vector<uint8_t>> WindowsSession::update()
       addPeerIfNew(addr);
       return std::nullopt;
     }
+    static constexpr std::string_view newPeerPrefix = "NEW_PEER:";
+    if (received_str.starts_with(newPeerPrefix)) [[unlikely]] {
+      std::string_view payload = received_str.substr(newPeerPrefix.size());
+      size_t sep = payload.rfind(':');
+      if (sep != std::string_view::npos) {
+        std::string ip(payload.substr(0, sep));
+        int port = std::atoi(std::string(payload.substr(sep + 1)).c_str());
+        sockaddr_in peerAddr = populateAddress(ip.c_str(), port);
+        addPeerIfNew(peerAddr);
+
+        // Ping the newcomer straight away
+        static constexpr char pingMessage[] = "PING";
+        sendto(socket,
+               pingMessage,
+               static_cast<int>(sizeof(pingMessage) - 1),
+               0,
+               (struct sockaddr*)&peerAddr,
+               static_cast<int>(sizeof(peerAddr)));
+      }
+      return std::nullopt;
+    }
 
     std::vector<uint8_t> appData(data.size());
     std::memcpy(appData.data(), data.data(), data.size());
