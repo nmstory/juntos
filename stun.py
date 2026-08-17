@@ -28,8 +28,21 @@ class StunProtocol(asyncio.DatagramProtocol):
             return
 
         elif parts[0] == "JOIN":
-            guests[client_address] = {"last_seen": time.time()}
+            now = time.time()
+            # Peers already in the guest book, about to be introduced to the
+            # newcomer. This avoids introducing it to itself.
+            live_peers = [addr for addr, info in guests.items()
+                          if now - info["last_seen"] <= TIMEOUT]
+
+            guests[client_address] = {"last_seen": now}
             print(f"Client joined: {client_address}")
+
+            # Tell each peer already waiting about the newcomer, so they PING it immediately
+            new_peer_notice = f"NEW_PEER:{client_address[0]}:{client_address[1]}".encode()
+            for addr in live_peers:
+                self.transport.sendto(new_peer_notice, addr)
+                print(f"Notified {addr} about new peer {client_address}")
+
             response = "JOIN_OK".encode()
 
         elif parts[0] == "LIST":
