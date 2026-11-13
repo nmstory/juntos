@@ -1,4 +1,3 @@
-#pragma once
 #pragma comment(lib, "ws2_32.lib")
 
 #include <client.h>
@@ -23,7 +22,10 @@ int main(int argc, char *argv[]) {
 	std::string stunHost = (argc > 2) ? argv[2] : DEFAULT_STUN_HOST;
 	int stunPort = (argc > 3) ? std::stoi(argv[3]) : DEFAULT_STUN_PORT;
 
-	client.init(port, stunHost, stunPort);
+	if (!client.init(port, stunHost, stunPort)) {
+		std::puts("Failed to initialise client.");
+		return 1;
+	}
 
 	// Read typed lines on a background thread and hand them to the main loop via a queue.
 	std::mutex outboxMutex;
@@ -40,16 +42,19 @@ int main(int argc, char *argv[]) {
 
 	size_t announcedPeers = 0;
 	while (true) {
-		if (auto bytes = client.update()) {
+		while (auto bytes = client.update()) {
 			std::cout << "Peer: " << std::string(bytes->begin(), bytes->end())
 			          << std::endl;
 		}
 		
-		auto peers = client.peerAddresses();
-		for (size_t i = announcedPeers; i < peers.size(); ++i) {
-			std::cout << "Peer discovered: " << peers[i] << std::endl;
+		// peerCount() is cheap; only format addresses when someone new shows up.
+		if (client.peerCount() != announcedPeers) {
+			auto peers = client.peerAddresses();
+			for (size_t i = announcedPeers; i < peers.size(); ++i) {
+				std::cout << "Peer discovered: " << peers[i] << std::endl;
+			}
+			announcedPeers = peers.size();
 		}
-		announcedPeers = peers.size();
 
 		// Send everything typed since the last iteration to every peer.
 		std::queue<std::string> pending;
@@ -59,12 +64,13 @@ int main(int argc, char *argv[]) {
 		}
 		for (; !pending.empty(); pending.pop()) {
 			const std::string &msg = pending.front();
-			client.send(std::span<const uint8_t>(
+			(void)client.send(std::span<const uint8_t>(
 			    reinterpret_cast<const uint8_t *>(msg.data()), msg.size()));
 		}
 
-		// Avoid pegging a core; 10ms poll is plenty for a chat demo.
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		// Sleep in the kernel until a packet arrives (wakes immediately) or 10ms
+		// pass, so typed lines still get sent promptly.
+		(void)client.waitForData(std::chrono::milliseconds(10));
 	}
 
 	return 0;

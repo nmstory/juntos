@@ -37,7 +37,7 @@ bool Client::init(const std::string& hostname,
 
 bool Client::addPeer(const std::string& hostname, const int port)
 {
-  session->setupPeer(hostname, port);
+  (void)session->setupPeer(hostname, port);
   return true;
 }
 
@@ -46,9 +46,19 @@ bool Client::send(std::span<const uint8_t> data)
   return session->send(data);
 }
 
-std::optional<std::vector<uint8_t>> Client::update()
+std::optional<std::span<const uint8_t>> Client::update()
 {
   return session->update();
+}
+
+bool Client::waitForData(std::chrono::milliseconds timeout) const
+{
+  return session && session->waitForData(timeout);
+}
+
+size_t Client::peerCount() const
+{
+  return session ? session->peerCount() : 0;
 }
 
 std::vector<std::string> Client::peerAddresses() const

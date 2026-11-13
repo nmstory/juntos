@@ -38,7 +38,9 @@ class StunProtocol(asyncio.DatagramProtocol):
             print(f"Client joined: {client_address}")
 
             # Tell each peer already waiting about the newcomer, so they PING it immediately
-            new_peer_notice = f"NEW_PEER:{client_address[0]}:{client_address[1]}".encode()
+            # Peer-to-peer messages carry a 1-byte type tag (see include/protocol.h);
+            # 0x03 is NEW_PEER, followed by "ip:port".
+            new_peer_notice = b"\x03" + f"{client_address[0]}:{client_address[1]}".encode()
             for addr in live_peers:
                 self.transport.sendto(new_peer_notice, addr)
                 print(f"Notified {addr} about new peer {client_address}")

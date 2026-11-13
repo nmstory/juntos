@@ -24,7 +24,23 @@ public:
       std::optional<std::chrono::milliseconds> recvTimeout = std::nullopt);
   [[nodiscard]] bool addPeer(const std::string& hostname, const int port);
   [[nodiscard]] bool send(std::span<const uint8_t> data);
-  [[nodiscard]] std::optional<std::vector<uint8_t>> update();
+
+  /*
+          @brief Process incoming traffic and return the next application
+     payload, if any.
+          @return A view into the client's receive buffer, valid only until
+     the next call to update(). Copy the bytes if you need to keep them.
+  */
+  [[nodiscard]] std::optional<std::span<const uint8_t>> update();
+
+  /*
+          @brief Sleep until data arrives or the timeout expires, instead of
+     busy-polling update()
+          @return true if data is ready
+  */
+  [[nodiscard]] bool waitForData(std::chrono::milliseconds timeout) const;
+
+  [[nodiscard]] size_t peerCount() const;
   [[nodiscard]] std::vector<std::string> peerAddresses() const;
   [[nodiscard]] Socket getSocketFD() const;
 
