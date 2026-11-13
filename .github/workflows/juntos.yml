@@ -9,14 +9,14 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
     - uses: actions/checkout@v4
     - name: setup
       run: |
         sudo apt-get update
-        sudo apt install cmake llvm-16
+        sudo apt-get install -y cmake llvm-16
     - name: compile
       run: |
         rm -Rf build/
@@ -30,13 +30,13 @@ jobs:
         fixesFile: clang-fixes.yaml
 
   sanitizers:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: setup
       run: |
         sudo apt-get update
-        sudo apt install cmake clang
+        sudo apt-get install -y cmake clang
     - name: build with ASan + UBSan
       run: |
         rm -Rf build/
@@ -51,7 +51,7 @@ jobs:
         UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
 
   clang-format-checking:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Install clang-format-19
