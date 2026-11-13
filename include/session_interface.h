@@ -1,15 +1,17 @@
 #pragma once
 
+#include <array>
 #include <chrono>
 #include <cstdint>
-#include <iostream>
 #include <optional>
+#include <span>
+#include <string>
 #include <string_view>
-#include <thread>
 #include <vector>
 
 #include <common_juntos.h>
 #include <network_handler.h>
+#include <protocol.h>
 
 struct Peer
 {
@@ -33,11 +35,20 @@ struct Peer
   struct sockaddr_in sendAddr;
 };
 
+/*
+        Platform-independent session. The hot path (update / send /
+   waitForData) lives here once; platform subclasses only handle socket setup,
+   the STUN handshake and teardown.
+*/
 class SessionInterface
 {
 public:
   SessionInterface() = default;
   virtual ~SessionInterface() = default;
+
+  SessionInterface(const SessionInterface&) = delete;
+  SessionInterface& operator=(const SessionInterface&) = delete;
+
   /*
           @brief Initialise session functionality without contacting the STUN
      server
@@ -64,71 +75,95 @@ public:
       const int& stunPort = DEFAULT_STUN_PORT) = 0;
 
   /*
-          @brief Create a Peer by configuring it's low-level data
+          @brief Register a peer and send it a PING to start the handshake
           @param destHostname The hostname of the peer to add
           @param destPort The port number of the peer to add
           @return The added peer
   */
-  [[nodiscard]] virtual Peer setupPeer(const std::string& destHostname,
-                                       const int& destPort) = 0;
+  [[nodiscard]] Peer setupPeer(const std::string& destHostname,
+                               const int& destPort);
 
   /*
-          @brief Update the Session — handle protocol traffic and return any
-     application-level data received
-          @return Received application bytes, or nullopt if nothing (or only
-     protocol messages) arrived
+          @brief Handle protocol traffic and return the next application
+     payload. Drains every pending packet until it finds application data or
+     the socket is empty.
+          @return A view of the received bytes, or nullopt if nothing (or only
+     protocol messages) arrived. The view points into a buffer owned by this
+     session and is only valid until the next update() call — copy it if you
+     need to keep it.
   */
-  [[nodiscard]] virtual std::optional<std::vector<uint8_t>> update() = 0;
+  [[nodiscard]] std::optional<std::span<const uint8_t>> update();
 
   /*
-          @brief Send bytes to all known peers
+          @brief Send bytes to all known peers. Allocation-free: the 1-byte
+     header and payload are framed in a reused buffer.
+          @return false if the payload is too large or any send failed
   */
-  [[nodiscard]] virtual bool send(std::span<const uint8_t> data) = 0;
+  [[nodiscard]] bool send(std::span<const uint8_t> data);
+
+  /*
+          @brief Block until the socket has data to read, or the timeout
+     expires. Lets callers sleep in the kernel instead of busy-polling update().
+          @return true if data is ready to be read
+  */
+  [[nodiscard]] bool waitForData(std::chrono::milliseconds timeout) const;
 
   /*
           @brief Get the socket file descriptor
-          @return Socket file descriptor
   */
-  [[nodiscard]] virtual Socket getSocketFD() = 0;
+  [[nodiscard]] Socket getSocketFD() const { return sock; }
+
+  /*
+          @brief Number of currently known peers (cheap; no formatting)
+  */
+  [[nodiscard]] size_t peerCount() const { return peers.size(); }
 
   /*
           @brief Human-readable "ip:port" for each currently known peer
           @return One string per peer, in discovery order
   */
-  [[nodiscard]] std::vector<std::string> peerAddresses() const
-  {
-    std::vector<std::string> out;
-    out.reserve(peers.size());
-    for (const Peer& peer : peers) {
-      out.emplace_back(std::string(inet_ntoa(peer.sendAddr.sin_addr)) + ":"
-                       + std::to_string(ntohs(peer.sendAddr.sin_port)));
-    }
-    return out;
-  }
+  [[nodiscard]] std::vector<std::string> peerAddresses() const;
 
 protected:
   /*
           @brief Add a peer to the peer list, skipping it if an identical
      address is already known
-          @param addr The peer's send address
   */
-  void addPeerIfNew(const sockaddr_in& addr)
-  {
-    for (const Peer& peer : peers) {
-      if (peer.sendAddr.sin_addr.s_addr == addr.sin_addr.s_addr
-          && peer.sendAddr.sin_port == addr.sin_port)
-      {
-        return;
-      }
-    }
-    peers.push_back(Peer(addr));
-  }
+  void addPeerIfNew(const sockaddr_in& addr);
 
-  std::vector<Peer> peers;
+  // React to a non-Data packet (Ping / Pong / NewPeer)
+  void handleControl(std::span<const uint8_t> packet, const sockaddr_in& from);
+
+  /*
+          @brief Blocking receive of the STUN server's next reply during init.
+     Peer control packets that arrive first are handled, not mistaken for the
+     reply.
+          @return The reply text (a view into the receive buffer), or nullopt
+     on error / timeout
+  */
+  std::optional<std::string_view> recvStunReply();
+
+  // Send a single-byte protocol message (Ping / Pong) to one address
+  void sendControl(MsgType type, const sockaddr_in& to) const;
+
+  // Parse the STUN server's "ip:port;ip:port;" guest list and add each peer
+  void addPeersFromList(std::string_view list);
+
+  // PING every known peer to open NAT mappings
+  void pingAllPeers() const;
+
+  Socket sock {};
+  std::vector<Peer> peers;  // Flat, contiguous; tiny N so linear scan wins
   std::chrono::time_point<std::chrono::steady_clock>
       lastHeartbeatToStun;  // Time of last heartbeat sent to the STUN server
   bool stunEnabled =
       false;  // Whether this session was initialised against the STUN server
-  struct sockaddr_in localAddr;
-  struct sockaddr_in stunAddr;
+  struct sockaddr_in localAddr {};
+  struct sockaddr_in stunAddr {};
+
+private:
+  // Reused for every receive; update() hands out views into it
+  std::array<uint8_t, kMaxUdpPayload> recvBuffer;
+  // Reused for framing outgoing Data packets
+  std::array<uint8_t, kMaxUdpPayload> sendBuffer;
 };

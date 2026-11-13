@@ -1,12 +1,12 @@
 #pragma once
 
-#include <array>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
+#include <optional>
 #include <span>
 #include <string>
-#include <tuple>
-#include <vector>
+#include <string_view>
 
 #include <common_juntos.h>
 #include <string.h>
@@ -18,12 +18,29 @@ const char DEFAULT_STUN_HOST[] = "127.0.0.1";
 const int DEFAULT_STUN_PORT = 12345;
 
 /*
-        @brief Populate a socket address with an IP address and port
-        @param ip: IP address to populate the socket address with
-        @param port: Port to populate the socket address with
-        @returns sockaddr_in: Populated sockaddr_in
+        @brief Populate a socket address from a hostname or IP and a port.
+   Uses getaddrinfo, so it may block on DNS — keep it out of the hot path.
+        @param ip: hostname or IP address
+        @param port: port number
+        @returns sockaddr_in: Populated sockaddr_in (sin_family == 0 on failure)
 */
 sockaddr_in populateAddress(const char* ip, const int& port);
+
+/*
+        @brief Build a socket address from a numeric IPv4 string, with no DNS
+   lookup and no allocation. Used for addresses received over the wire.
+        @param ip: dotted-quad IPv4 address, e.g. "203.0.113.7"
+        @param port: port number
+        @returns The address, or nullopt if ip isn't a valid IPv4 literal
+*/
+std::optional<sockaddr_in> parseNumericAddress(std::string_view ip,
+                                               uint16_t port);
+
+/*
+        @brief Parse "ip:port" (as sent by the STUN server) without DNS
+        @returns The address, or nullopt if malformed
+*/
+std::optional<sockaddr_in> parseEndpoint(std::string_view endpoint);
 
 /*
         @brief Output an error message
@@ -75,80 +92,45 @@ T createSocket(sockaddr_in& addr)
   return s;
 }
 
-/*
-        @brief Sends data to an address via a socket
-        @param sendSockFD: Socket to send data from
-        @param recvAddr: Address to send data to
-        @param string: Data to send
-        @param length: Length of data to send
-        @returns bool: whether data was sent successfully
-*/
-template<typename T>
-bool sendData(const T& sendSockFD,
-              const sockaddr_in& recvAddr,
-              const std::span<const std::byte>& str,
-              const size_t& length)
+struct RecvResult
 {
-  int byteCount = sendto(sendSockFD,
-                         str.data(),
-                         length,
-                         0,
-                         (struct sockaddr*)&recvAddr,
-                         sizeof(recvAddr));
-
-  if (byteCount > 0) {
-    return true;
-  } else {
-    outputError("Error sending data");
-  }
-
-  return false;
-}
+  ssize_t bytes;  // > 0 on success
+  sockaddr_in from;
+};
 
 /*
-        @brief Receive data from a socket
-        @param recvSockFD: Socket to receive data from
-        @returns std::tuple<bool, std::vector<char>, sockaddr_in>
-                - success_flag: whether data was received successfully
-                - received_data: the data received from the socket
-                - sender_address: address of the sender
+        @brief Receive one datagram straight into a caller-owned buffer — no
+   intermediate copy and no allocation.
+        @param sock: Socket to receive from
+        @param buffer: Destination buffer (should hold kMaxUdpPayload bytes)
+        @returns Bytes received (<= 0 if nothing was available) and the sender
 */
-template<typename T>
-std::tuple<bool, std::vector<std::byte>, sockaddr_in> recvData(T recvSockFD)
+inline RecvResult recvInto(Socket sock, std::span<uint8_t> buffer)
 {
-  std::array<std::byte, 65507> buffer;  // Max safe UDP payload size
-  sockaddr_in sender_addr {};
-  socklen_t addr_len = sizeof(sender_addr);
+  RecvResult result {0, {}};
+  socklen_t addrLen = sizeof(result.from);
 
-  ssize_t byteCount =
-      recvfrom(recvSockFD,
-               reinterpret_cast<char*>(
-                   buffer.data()),  // Winsock uses char*, Linux uses void*
-               static_cast<int>(buffer.size()),
-               0,
-               reinterpret_cast<sockaddr*>(&sender_addr),
-               &addr_len);
-
-  if (byteCount > 0) {
-    return {true,
-            std::vector<std::byte>(buffer.begin(), buffer.begin() + byteCount),
-            sender_addr};
-  }
+  result.bytes = recvfrom(sock,
+                          reinterpret_cast<char*>(buffer.data()),
+                          static_cast<int>(buffer.size()),
+                          0,
+                          reinterpret_cast<sockaddr*>(&result.from),
+                          &addrLen);
 
 #ifdef _WIN32
-  if (byteCount == SOCKET_ERROR) {
+  if (result.bytes == SOCKET_ERROR) {
     int err = WSAGetLastError();
-    if (err != WSAEWOULDBLOCK) {
+    if (err != WSAEWOULDBLOCK && err != WSAETIMEDOUT) {
       std::cerr << "recvfrom error: " << err << std::endl;
     }
   }
 #elif defined(JUNTOS_UNIX)
-  if (byteCount < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+  if (result.bytes < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
     std::perror("recvfrom error");
   }
 #endif
 
-  return {false, {}, {}};
+  return result;
 }
 
 /*

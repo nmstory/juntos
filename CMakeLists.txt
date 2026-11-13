@@ -22,6 +22,7 @@ add_library(
     juntos_lib OBJECT
     src/client.cpp
     src/network_handler.cpp
+    src/session_interface.cpp
     src/session_linux.cpp
     src/session_windows.cpp
 )
