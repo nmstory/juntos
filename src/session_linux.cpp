@@ -44,19 +44,8 @@ bool LinuxSession::initSessionToStun(const int& portNumber,
          (struct sockaddr*)&stunAddr,
          sizeof(stunAddr));
 
-  char buffer[4096];
-  socklen_t serverAddrLen = sizeof(stunAddr);
-  ssize_t bytesReceived = recvfrom(sock,
-                                   buffer,
-                                   sizeof(buffer) - 1,
-                                   0,
-                                   (struct sockaddr*)&stunAddr,
-                                   &serverAddrLen);
-
-  if (bytesReceived > 0) {
-    std::cout << "Server response: "
-              << std::string_view(buffer, static_cast<size_t>(bytesReceived))
-              << std::endl;
+  if (auto reply = recvStunReply()) {
+    std::cout << "Server response: " << *reply << std::endl;
   } else {
     std::cerr << "No response from server or error occurred" << std::endl;
   }
@@ -65,30 +54,23 @@ bool LinuxSession::initSessionToStun(const int& portNumber,
   static constexpr char listMessage[] = "LIST:";
   sendto(sock,
          listMessage,
-         sizeof(listMessage) - 1,
+         static_cast<int>(sizeof(listMessage) - 1),
          0,
          (struct sockaddr*)&stunAddr,
-         sizeof(stunAddr));
+         static_cast<int>(sizeof(stunAddr)));
 
-  bytesReceived = recvfrom(sock,
-                           buffer,
-                           sizeof(buffer) - 1,
-                           0,
-                           (struct sockaddr*)&stunAddr,
-                           &serverAddrLen);
+  // Parse the guest list before switching to non-blocking mode
+  if (auto list = recvStunReply()) {
+    if (*list == "EMPTY") {
+      std::puts("Currently waiting for other clients to connect! Hang on :)");
+    } else {
+      addPeersFromList(*list);
+    }
+  }
 
   // Set socket to non-blocking now the blocking JOIN/LIST handshake is done.
   int flags = fcntl(sock, F_GETFL, 0);
   fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-
-  if (bytesReceived > 0) {
-    std::string_view list(buffer, static_cast<size_t>(bytesReceived));
-    if (list == "EMPTY") {
-      std::puts("Currently waiting for other clients to connect! Hang on :)");
-      return true;
-    }
-    addPeersFromList(list);
-  }
 
   pingAllPeers();
   return true;

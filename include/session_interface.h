@@ -131,6 +131,18 @@ protected:
   */
   void addPeerIfNew(const sockaddr_in& addr);
 
+  // React to a non-Data packet (Ping / Pong / NewPeer)
+  void handleControl(std::span<const uint8_t> packet, const sockaddr_in& from);
+
+  /*
+          @brief Blocking receive of the STUN server's next reply during init.
+     Peer control packets that arrive first are handled, not mistaken for the
+     reply.
+          @return The reply text (a view into the receive buffer), or nullopt
+     on error / timeout
+  */
+  std::optional<std::string_view> recvStunReply();
+
   // Send a single-byte protocol message (Ping / Pong) to one address
   void sendControl(MsgType type, const sockaddr_in& to) const;
 

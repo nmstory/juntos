@@ -48,25 +48,10 @@ bool WindowsSession::initSessionToStun(const int& portNumber,
          (struct sockaddr*)&stunAddr,
          static_cast<int>(sizeof(stunAddr)));
 
-  char buffer[4096];
-  socklen_t serverAddrLen = sizeof(stunAddr);
-  int bytesReceived = recvfrom(sock,
-                               buffer,
-                               static_cast<int>(sizeof(buffer) - 1),
-                               0,
-                               (struct sockaddr*)&stunAddr,
-                               &serverAddrLen);
-
-  if (bytesReceived > 0) {
-    std::cout << "Server response: "
-              << std::string_view(buffer, static_cast<size_t>(bytesReceived))
-              << std::endl;
+  if (auto reply = recvStunReply()) {
+    std::cout << "Server response: " << *reply << std::endl;
   } else {
-    std::cerr
-        << "No response from server or error occurred. recvfrom returned: "
-        << bytesReceived << std::endl;
-    int err = WSAGetLastError();
-    std::cerr << "recvfrom error: " << err << std::endl;
+    std::cerr << "No response from server or error occurred" << std::endl;
   }
 
   // Get the list of clients
@@ -78,27 +63,20 @@ bool WindowsSession::initSessionToStun(const int& portNumber,
          (struct sockaddr*)&stunAddr,
          static_cast<int>(sizeof(stunAddr)));
 
-  bytesReceived = recvfrom(sock,
-                           buffer,
-                           static_cast<int>(sizeof(buffer) - 1),
-                           0,
-                           (struct sockaddr*)&stunAddr,
-                           &serverAddrLen);
+  // Parse the guest list before switching to non-blocking mode
+  if (auto list = recvStunReply()) {
+    if (*list == "EMPTY") {
+      std::puts("Currently waiting for other clients to connect! Hang on :)");
+    } else {
+      addPeersFromList(*list);
+    }
+  }
 
   u_long mode = 1;  // Non-blocking mode
   if (ioctlsocket(sock, FIONBIO, &mode) != 0) {
     std::cerr << "Failed to set socket to non-blocking mode." << std::endl;
     WSACleanup();
     return false;
-  }
-
-  if (bytesReceived > 0) {
-    std::string_view list(buffer, static_cast<size_t>(bytesReceived));
-    if (list == "EMPTY") {
-      std::puts("Currently waiting for other clients to connect! Hang on :)");
-      return true;
-    }
-    addPeersFromList(list);
   }
 
   pingAllPeers();

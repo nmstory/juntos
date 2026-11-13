@@ -40,34 +40,65 @@ std::optional<std::span<const uint8_t>> SessionInterface::update()
     const std::span<const uint8_t> packet(recvBuffer.data(),
                                           static_cast<size_t>(bytes));
 
-    switch (static_cast<MsgType>(packet[0])) {
-      case MsgType::Data:
-        [[likely]] return packet.subspan(1);
-
-      case MsgType::Ping:
-        sendControl(MsgType::Pong, from);
-        addPeerIfNew(from);
-        break;
-
-      case MsgType::Pong:
-        addPeerIfNew(from);
-        break;
-
-      case MsgType::NewPeer: {
-        std::string_view endpoint(
-            reinterpret_cast<const char*>(packet.data() + 1),
-            packet.size() - 1);
-        if (auto peerAddr = parseEndpoint(endpoint)) {
-          addPeerIfNew(*peerAddr);
-          sendControl(MsgType::Ping, *peerAddr);  // ping the newcomer now
-        }
-        break;
-      }
-
-      default:
-        break;  // unknown / stray STUN text reply: ignore and keep draining
+    if (static_cast<MsgType>(packet[0]) == MsgType::Data) [[likely]] {
+      return packet.subspan(1);
     }
+    handleControl(packet, from);  // then keep draining
   }
+}
+
+void SessionInterface::handleControl(std::span<const uint8_t> packet,
+                                     const sockaddr_in& from)
+{
+  switch (static_cast<MsgType>(packet[0])) {
+    case MsgType::Ping:
+      sendControl(MsgType::Pong, from);
+      addPeerIfNew(from);
+      break;
+
+    case MsgType::Pong:
+      addPeerIfNew(from);
+      break;
+
+    case MsgType::NewPeer: {
+      std::string_view endpoint(
+          reinterpret_cast<const char*>(packet.data() + 1), packet.size() - 1);
+      if (auto peerAddr = parseEndpoint(endpoint)) {
+        addPeerIfNew(*peerAddr);
+        sendControl(MsgType::Ping, *peerAddr);  // ping the newcomer now
+      }
+      break;
+    }
+
+    default:
+      break;  // Data handled by caller; unknown / stray STUN text: ignore
+  }
+}
+
+std::optional<std::string_view> SessionInterface::recvStunReply()
+{
+  // Bounded so a flood of peer packets can't wedge init forever
+  for (int attempts = 0; attempts < 64; ++attempts) {
+    auto [bytes, from] = recvInto(sock, recvBuffer);
+    if (bytes <= 0) {
+      return std::nullopt;  // error / timeout
+    }
+
+    const std::span<const uint8_t> packet(recvBuffer.data(),
+                                          static_cast<size_t>(bytes));
+
+    if (from.sin_addr.s_addr == stunAddr.sin_addr.s_addr
+        && from.sin_port == stunAddr.sin_port)
+    {
+      return std::string_view(reinterpret_cast<const char*>(packet.data()),
+                              packet.size());
+    }
+
+    // A peer that heard about us via NEW_PEER can PING before the STUN
+    // server's reply arrives; answer it rather than mistaking it for the reply
+    handleControl(packet, from);
+  }
+  return std::nullopt;
 }
 
 bool SessionInterface::send(std::span<const uint8_t> data)
