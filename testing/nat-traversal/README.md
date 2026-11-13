@@ -2,7 +2,7 @@
 
 Goal: prove the JOIN/LIST → PING/PONG → direct-traffic flow in
 [`stun.py`](../../stun.py) and
-[`src/session_linux.cpp`](../../src/session_linux.cpp) actually punches
+[`src/session_interface.cpp`](../../src/session_interface.cpp) actually punches
 through two independent, real NATs — not just loopback — and capture the
 packets as evidence for the blog post.
 
@@ -114,16 +114,19 @@ Pull the three pcaps to one machine and check, in order:
    handshake that looks like chat text**. If chat text shows up in this
    capture, traffic is still relaying through the server and the hole punch
    failed.
-2. **peer-a.pcap** / **peer-b.pcap**: `PING` and `PONG` packets exchanged
+2. **peer-a.pcap** / **peer-b.pcap**: Ping and Pong packets exchanged
+   (1-byte payloads, `0x01` and `0x02`; see
+   [`include/protocol.h`](../../include/protocol.h))
    directly between Peer A's public `ip:port` and Peer B's public `ip:port`
    — addresses that came out of the STUN server's `LIST` response, not the
    droplet's IP. This is the actual hole-punch evidence.
 3. Chat text in peer-a.pcap / peer-b.pcap going straight between the two
-   peer IPs, with no droplet IP involved at that point.
+   peer IPs, with no droplet IP involved at that point. Each chat datagram
+   starts with a `0x04` (Data) byte followed by the text.
 
-`wireshark stun-server.pcap` (or `tcpdump -r ... -A` to see payloads as
-text, since these are unencrypted ASCII protocol messages) makes this easy
-to eyeball. A filter like `udp.port == 12345` on the server capture and
+`wireshark stun-server.pcap` (or `tcpdump -r ... -X` to see payloads as
+hex + text; the STUN handshake is ASCII, peer traffic is a 1-byte type tag
+then the payload) makes this easy to eyeball. A filter like `udp.port == 12345` on the server capture and
 `udp` on the peer captures is enough — there isn't much other traffic to
 wade through.
 

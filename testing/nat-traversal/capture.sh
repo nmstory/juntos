@@ -35,7 +35,7 @@ echo
 echo "What to look for:"
 echo "  1. This host -> STUN server: 'JOIN' then 'LIST:'"
 echo "  2. STUN server -> this host: 'JOIN_OK' then the peer's ip:port"
-echo "  3. This host <-> peer (NOT via the STUN server): 'PING' then 'PONG'"
+echo "  3. This host <-> peer (NOT via the STUN server): Ping (0x01) then Pong (0x02)"
 echo "     -- this is the hole-punch. It's the first packet either NAT lets"
 echo "        through from the peer's IP, before the peer has sent anything"
 echo "        to this host's public mapping."

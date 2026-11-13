@@ -57,6 +57,40 @@ I'm currently using Microsoft's Visual Studio 2022, which has support to compile
 
 [See here](https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-170) for a tutorial on how to configure this!
 
+## Performance
+
+Juntos is a hobby project, not a next-generation networking stack, but it's built with performance in mind. Four ideas run through the design:
+
+### 1. An allocation-free, zero-copy hot path
+Sending and receiving a packet doesn't touch the heap.
+* `update()` receives straight into a buffer owned by the session and returns a `std::span` view of the payload. Before this, every packet cost two heap allocations and two copies. The view is only valid until the next `update()`, so copy it if you need to keep it.
+* `send()` takes a `std::span<const uint8_t>`, frames it in a reused send buffer, and calls `sendto` once per peer.
+* Protocol messages are `constexpr` bytes. Peers are kept in one contiguous `std::vector` of plain `sockaddr_in` values, so the lookup is a cache-friendly linear scan (peer counts are small).
+
+### 2. Non-blocking, event-driven I/O
+* Sockets are non-blocking, and `update()` drains every pending protocol packet in one call. This works the same on Linux, macOS and Windows, because the hot path lives once in `SessionInterface` rather than being copied per platform.
+* `waitForData(timeout)` sleeps in the kernel (`poll` / `WSAPoll`) until a packet arrives, so apps don't have to busy-poll or `sleep()`. The chat example wakes the moment a message lands instead of up to 10 ms later.
+* The STUN server is a single-threaded `asyncio` datagram server, with no thread-per-request overhead.
+
+### 3. A lean binary wire protocol, direct paths
+* Every peer-to-peer datagram starts with a 1-byte type tag ([`include/protocol.h`](include/protocol.h)), so dispatch is a `switch`, not string comparisons. The overhead is one byte per packet, and app data can never be mistaken for a protocol message.
+* Addresses from the wire are parsed with `inet_pton` / `std::from_chars`, so there are no DNS lookups or allocations in the hot path.
+* After UDP hole punching, peers talk directly. The STUN server is out of the data path entirely, so there's no relay hop adding latency.
+
+### 4. Measured, not assumed
+* [`examples/bench`](examples/bench/main.cpp) measures loopback round-trip latency and one-way packet rate. It's built with the examples (`-D JUNTOS_BUILD_EXAMPLES=ON`): run `./examples/bench/juntos_bench`.
+* Ideas that sound fast get benchmarked before they stay. Scatter-gather `sendmsg` (header and payload sent without a copy) was ~12–15% *slower* than a small `memcpy` plus `sendto` for game-sized packets, so it was dropped.
+* CI builds with `-O3`, and the ASan/UBSan builds keep the fast paths honest. That matters more now that `update()` hands out views into a reused buffer.
+
+Loopback results before and after the zero-copy and protocol work (WSL2 Ubuntu 24.04, g++ 13 `-O3`, 100k round trips of 32 bytes, 1M one-way 64-byte packets, runs interleaved):
+
+| | RTT p50 | RTT p99 | Send rate |
+|---|---|---|---|
+| Before | 7.15 µs | ~12.5 µs | ~149k pkt/s |
+| After | 6.76 µs | ~11.0 µs | ~145k pkt/s |
+
+Latency improves by about 5% at the median and 10% at the tail. Send rate is unchanged within noise, because at these sizes the cost is almost entirely the `sendto` syscall. Batching syscalls (`sendmmsg` / `recvmmsg`) is the obvious next step if throughput ever matters.
+
 ## Deploying the STUN server
 
 For anything beyond a quick local test, run `stun.py` under systemd instead of a screen/`&` session — you get restart-on-crash, start-on-boot, and logs via `journalctl` for free.
